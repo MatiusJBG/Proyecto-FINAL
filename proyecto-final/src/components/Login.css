@@ -1,0 +1,120 @@
+
+.custom-error {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: linear-gradient(90deg, #2a1a2e 0%, #23272f 100%);
+  color: #ffb4b4;
+  border: 1.5px solid #e94560;
+  border-radius: 8px;
+  padding: 0.8rem 1.2rem;
+  margin-bottom: 0.7rem;
+  font-size: 1rem;
+  text-align: left;
+  font-weight: 500;
+  box-shadow: 0 2px 12px rgba(233,69,96,0.10);
+  animation: fadeIn 0.3s;
+  position: relative;
+}
+
+.custom-error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e94560;
+  color: #fff;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(233,69,96,0.15);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #181c24 0%, #23272f 100%);
+}
+
+.login-form {
+  background: #23272f;
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+  width: 100%;
+  max-width: 370px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.brand-title {
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: #e94560;
+  letter-spacing: 2px;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+}
+
+.login-title {
+  margin: 0 0 1.2rem 0;
+  color: #fff;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-group label {
+  font-size: 1rem;
+  color: #bfc9d1;
+}
+
+.input-group input {
+  padding: 0.7rem 1rem;
+  border: 1px solid #353b48;
+  background: #181c24;
+  color: #f1f1f1;
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s, background 0.2s;
+}
+
+.input-group input:focus {
+  border-color: #e94560;
+  background: #23272f;
+}
+
+button[type="submit"] {
+  padding: 0.8rem 0;
+  background: linear-gradient(90deg, #e94560 0%, #9036e0 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(233,69,96,0.08);
+}
+
+button[type="submit"]:hover {
+  background: linear-gradient(90deg, #9036e0 0%, #e94560 100%);
+  transform: translateY(-2px) scale(1.03);
+}
