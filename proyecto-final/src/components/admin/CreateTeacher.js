@@ -1,0 +1,65 @@
+import React, { useState } from 'react';
+import Modal from './Modal';
+
+
+function CreateTeacher() {
+  const [show, setShow] = useState(false);
+  const [form, setForm] = useState({ nombre: '', email: '', especialidad: '', telefono: '', grado: '', activo: true });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    if (!form.nombre || !form.email || !form.especialidad || !form.telefono || !form.grado) {
+      setError('Todos los campos son obligatorios');
+      return;
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) {
+      setError('El email no es válido');
+      return;
+    }
+    setError('');
+    setSuccess('Docente creado correctamente (simulado)');
+    setForm({ nombre: '', email: '', especialidad: '', telefono: '', grado: '', activo: true });
+    setTimeout(() => { setShow(false); setSuccess(''); }, 1200);
+  };
+
+  return (
+    <div style={{ margin: '24px 0' }}>
+      <button className="admin-btn" onClick={() => setShow(true)}>
+        Crear Docente
+      </button>
+      <Modal open={show} onClose={() => { setShow(false); setError(''); setSuccess(''); }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 340 }}>
+          <label>Nombre completo:
+            <input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className="admin-input" autoFocus />
+          </label>
+          <label>Email:
+            <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="admin-input" />
+          </label>
+          <label>Teléfono:
+            <input type="tel" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} className="admin-input" />
+          </label>
+          <label>Especialidad:
+            <input type="text" value={form.especialidad} onChange={e => setForm({ ...form, especialidad: e.target.value })} className="admin-input" />
+          </label>
+          <label>Grado académico:
+            <input type="text" value={form.grado} onChange={e => setForm({ ...form, grado: e.target.value })} className="admin-input" placeholder="Ej: Licenciatura, Maestría, Doctorado" />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" checked={form.activo} onChange={e => setForm({ ...form, activo: e.target.checked })} />
+            Docente activo
+          </label>
+          {error && <div style={{ color: '#e94560', textAlign: 'center' }}>{error}</div>}
+          {success && <div style={{ color: '#43d477', textAlign: 'center' }}>{success}</div>}
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 8 }}>
+            <button className="admin-btn" type="submit" style={{ minWidth: 100 }}>Crear</button>
+            <button className="admin-btn" type="button" style={{ background: '#353b48', color: '#fff', minWidth: 100 }} onClick={() => setShow(false)}>Cancelar</button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+}
+
+export default CreateTeacher;
