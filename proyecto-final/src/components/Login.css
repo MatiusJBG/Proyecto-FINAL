@@ -1,4 +1,3 @@
-
 .custom-error {
   display: flex;
   align-items: center;
@@ -81,8 +80,11 @@
 }
 
 .input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #e2e8f0;
+  font-weight: 500;
   font-size: 1rem;
-  color: #bfc9d1;
 }
 
 .input-group input {
@@ -99,6 +101,30 @@
 .input-group input:focus {
   border-color: #e94560;
   background: #23272f;
+}
+
+.input-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #23272f;
+  background: #181b23;
+  color: #e2e8f0;
+  font-size: 1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  outline: none;
+  box-shadow: none;
+  appearance: none;
+}
+
+.input-group select:focus {
+  border-color: #a259c6;
+  box-shadow: 0 0 0 2px rgba(162, 89, 198, 0.2);
+}
+
+.input-group select option {
+  background: #23272f;
+  color: #e2e8f0;
 }
 
 button[type="submit"] {
