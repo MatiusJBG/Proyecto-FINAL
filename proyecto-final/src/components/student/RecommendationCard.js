@@ -1,8 +1,9 @@
 import React from 'react';
-import './StudentDashboard.css';
+import './RecommendationCard.css';
 
 export default function RecommendationCard({ recommendation }) {
   if (!recommendation) return null;
+  
   return (
     <div className="recommendation-card">
       <div className="recommendation-icon">{recommendation.icon}</div>

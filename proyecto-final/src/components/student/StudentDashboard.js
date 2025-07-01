@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiUser, FiBook, FiBell, FiChevronRight, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import Sidebar from './Sidebar';
+import UserHeader from './UserHeader';
 import CourseProgress from './CourseProgress';
+import CurrentCoursePanel from './CurrentCoursePanel';
 import RecommendationCard from './RecommendationCard';
 import PendingEvaluations from './PendingEvaluations';
 import NotificationPanel from './NotificationPanel';
@@ -22,7 +25,7 @@ const mockNotifications = [
   { id: 2, message: 'Nueva tarea disponible en el módulo 3.', type: 'task' },
 ];
 
-export default function StudentDashboard() {
+export default function StudentDashboard({ onLogout, userData }) {
   const [score, setScore] = useState(58); // Simula score de evaluación
   const [recommendation, setRecommendation] = useState({});
 
@@ -45,33 +48,14 @@ export default function StudentDashboard() {
 
   return (
     <div className="dashboard-container">
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <FiUser size={32} />
-          <span>Estudiante</span>
-        </div>
-        <nav>
-          <ul>
-            <li><FiBook /> Cursos</li>
-            <li><FiBell /> Notificaciones</li>
-          </ul>
-        </nav>
-      </aside>
+      <Sidebar onLogout={onLogout} />
       <main className="dashboard-main">
-        <header className="dashboard-header">
-          <h1>¡Hola, {mockStudent.name}!</h1>
-        </header>
+        <UserHeader userData={userData} />
         <section className="dashboard-panels">
           <div className="panel panel-progress">
             <CourseProgress progress={mockCourse.progress} />
           </div>
-          <div className="panel panel-current-course">
-            <h2>Mi curso actual</h2>
-            <p className="course-name">{mockCourse.name}</p>
-            <p>Módulo: <b>{mockCourse.currentModule}</b></p>
-            <p>Lección: <b>{mockCourse.currentLesson}</b></p>
-            <button className="continue-btn"><FiChevronRight /> Continuar donde me quedé</button>
-          </div>
+          <CurrentCoursePanel course={mockCourse} />
           <div className="panel panel-recommendation">
             <RecommendationCard recommendation={recommendation} />
           </div>

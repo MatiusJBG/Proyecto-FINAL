@@ -1,0 +1,68 @@
+.pending-evaluations {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  padding: 1.2rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pending-evaluations h3 {
+  margin-bottom: 1rem;
+  color: #2e7dff;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.pending-evaluations ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.evaluation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.evaluation-item:last-child {
+  border-bottom: none;
+}
+
+.evaluation-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.eval-btn {
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.present-btn {
+  background: #2e7dff;
+  color: #fff;
+}
+
+.present-btn:hover {
+  background: #1a5dcc;
+}
+
+.feedback-btn {
+  background: #f0f8ff;
+  color: #2e7dff;
+  border: 1px solid #2e7dff;
+}
+
+.feedback-btn:hover {
+  background: #e6f3ff;
+} 

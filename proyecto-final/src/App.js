@@ -3,11 +3,11 @@ import './App.css';
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import TeacherPanel from './components/TeacherPanel';
-import StudentDashboard from './components/StudentDashboard';
+import { StudentDashboard } from './components/student';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [role, setRole] = useState('teacher'); // Cambiado a teacher para probar
+  const [role, setRole] = useState('student'); // Cambiado a student para probar
   const [userData, setUserData] = useState(null);
 
   // Función para manejar el login exitoso

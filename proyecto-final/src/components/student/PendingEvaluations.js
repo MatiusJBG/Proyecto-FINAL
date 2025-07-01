@@ -1,6 +1,6 @@
 import React from 'react';
 import { FiEdit, FiEye } from 'react-icons/fi';
-import './StudentDashboard.css';
+import './PendingEvaluations.css';
 
 export default function PendingEvaluations({ evaluations }) {
   return (
@@ -12,10 +12,14 @@ export default function PendingEvaluations({ evaluations }) {
             <span>{ev.name}</span>
             <div className="evaluation-actions">
               {ev.status === 'pending' && (
-                <button className="eval-btn present-btn"><FiEdit /> Presentar</button>
+                <button className="eval-btn present-btn">
+                  <FiEdit /> Presentar
+                </button>
               )}
               {ev.status === 'feedback' && (
-                <button className="eval-btn feedback-btn"><FiEye /> Ver retroalimentación</button>
+                <button className="eval-btn feedback-btn">
+                  <FiEye /> Ver retroalimentación
+                </button>
               )}
             </div>
           </li>
