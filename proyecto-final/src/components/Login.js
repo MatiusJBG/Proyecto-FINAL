@@ -8,7 +8,7 @@ function Login({ onLogin, onlyTeacher }) {
   const [role, setRole] = useState('teacher');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!email) {
@@ -19,16 +19,21 @@ function Login({ onLogin, onlyTeacher }) {
       setError('Por favor, ingresa tu contraseña.');
       return;
     }
-    
-    // Simulación de autenticación por rol
-    const userData = {
-      id: Date.now(),
-      email: email,
-      name: email.split('@')[0], // Simulación de nombre
-      role: role
-    };
-    
-    if (onLogin) onLogin(role, userData);
+    try {
+      const response = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || 'Error de autenticación');
+        return;
+      }
+      if (onLogin) onLogin(role, data);
+    } catch (err) {
+      setError('Error de conexión con el servidor');
+    }
   };
 
   return (

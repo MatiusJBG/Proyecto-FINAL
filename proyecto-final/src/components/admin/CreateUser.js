@@ -9,7 +9,7 @@ function CreateUser() {
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     if (!form.nombre || !form.email || !form.password || !form.telefono) {
       setError('Todos los campos son obligatorios');
@@ -24,9 +24,46 @@ function CreateUser() {
       return;
     }
     setError('');
-    setSuccess('Usuario creado correctamente (simulado)');
-    setForm({ nombre: '', email: '', password: '', telefono: '', tipo: 'Alumno', activo: true });
-    setTimeout(() => { setShow(false); setSuccess(''); }, 1200);
+    setSuccess('');
+    // Determinar endpoint y payload según tipo
+    let endpoint = '';
+    let payload = {};
+    if (form.tipo === 'Alumno') {
+      endpoint = 'http://localhost:5000/api/estudiantes';
+      payload = {
+        nombre: form.nombre,
+        correo_electronico: form.email,
+        contrasena: form.password,
+        carrera: 'Por definir',
+        semestre: 1,
+        fecha_nacimiento: '2000-01-01'
+      };
+    } else {
+      endpoint = 'http://localhost:5000/api/profesores';
+      payload = {
+        nombre: form.nombre,
+        correo_electronico: form.email,
+        contrasena: form.password,
+        especialidad: 'General'
+      };
+    }
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Error al crear usuario');
+        return;
+      }
+      setSuccess('Usuario creado correctamente');
+      setForm({ nombre: '', email: '', password: '', telefono: '', tipo: 'Alumno', activo: true });
+      setTimeout(() => { setShow(false); setSuccess(''); }, 1200);
+    } catch (err) {
+      setError('Error de conexión con el servidor');
+    }
   };
 
   return (
