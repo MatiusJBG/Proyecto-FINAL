@@ -18,63 +18,92 @@ function GraphsPanel({ data }) {
   };
 
   // Nodos y edges mejorados visualmente
+  // Construcción dinámica de grafos con datos reales
   const graphData = useMemo(() => {
+    if (!data || !data.cursos) return { nodes: [], edges: [] };
+
+    // Grafo de usuarios: docentes y cursos
     if (selected === 'usuarios') {
-      return {
-        nodes: [
-          { id: 'admin', data: { label: 'Administrador' }, position: { x: 300, y: 50 }, style: nodeStyles.admin },
-          { id: 'alumno1', data: { label: 'Alumno: Juan Pérez' }, position: { x: 100, y: 200 }, style: nodeStyles.alumno },
-          { id: 'alumno2', data: { label: 'Alumno: Ana Ruiz' }, position: { x: 250, y: 320 }, style: nodeStyles.alumno },
-          { id: 'docente1', data: { label: 'Docente: M. López' }, position: { x: 500, y: 200 }, style: nodeStyles.docente },
-        ],
-        edges: [
-          { id: 'e1', source: 'admin', target: 'alumno1', label: 'gestiona', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#e94560', strokeWidth: 2 } },
-          { id: 'e2', source: 'admin', target: 'docente1', label: 'gestiona', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#e94560', strokeWidth: 2 } },
-          { id: 'e3', source: 'docente1', target: 'alumno2', label: 'tutor', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#43d477', strokeWidth: 2 } },
-        ],
-      };
+      let nodes = [];
+      let edges = [];
+      let docentes = {};
+      let x = 100;
+      let yDocente = 50;
+      let yCurso = 200;
+      // Agrupar cursos por docente
+      data.cursos.forEach((curso, idx) => {
+        const docente = curso.docente || 'Sin docente';
+        if (!docentes[docente]) {
+          docentes[docente] = { id: `docente_${docente.replace(/\s/g, '_')}_${idx}`, nombre: docente, cursos: [] };
+        }
+        docentes[docente].cursos.push(curso);
+      });
+      let docIdx = 0;
+      Object.values(docentes).forEach((doc) => {
+        const docenteId = doc.id;
+        nodes.push({ id: docenteId, data: { label: `Docente: ${doc.nombre}` }, position: { x: x + docIdx * 250, y: yDocente }, style: nodeStyles.docente });
+        doc.cursos.forEach((curso, cIdx) => {
+          const cursoId = `curso_${curso.id}`;
+          nodes.push({ id: cursoId, data: { label: `Curso: ${curso.nombre}` }, position: { x: x + docIdx * 250 + cIdx * 120, y: yCurso }, style: nodeStyles.curso });
+          edges.push({ id: `e_docente_curso_${docenteId}_${curso.id}`, source: docenteId, target: cursoId, label: 'imparte', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#43d477', strokeWidth: 2 } });
+        });
+        docIdx++;
+      });
+      return { nodes, edges };
     }
+
+    // Grafo: Curso -> Módulo -> Lección
     if (selected === 'cursos') {
-      return {
-        nodes: [
-          { id: 'curso1', data: { label: 'Curso: Matemáticas' }, position: { x: 300, y: 50 }, style: nodeStyles.curso },
-          { id: 'modulo1', data: { label: 'Módulo: Álgebra' }, position: { x: 200, y: 200 }, style: nodeStyles.modulo },
-          { id: 'leccion1', data: { label: 'Lección: Ecuaciones' }, position: { x: 100, y: 350 }, style: nodeStyles.leccion },
-          { id: 'modulo2', data: { label: 'Módulo: Geometría' }, position: { x: 400, y: 200 }, style: nodeStyles.modulo },
-          { id: 'leccion2', data: { label: 'Lección: Triángulos' }, position: { x: 500, y: 350 }, style: nodeStyles.leccion },
-        ],
-        edges: [
-          { id: 'e1', source: 'curso1', target: 'modulo1', label: 'contiene', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#f7b731', strokeWidth: 2 } },
-          { id: 'e2', source: 'curso1', target: 'modulo2', label: 'contiene', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#f7b731', strokeWidth: 2 } },
-          { id: 'e3', source: 'modulo1', target: 'leccion1', label: 'incluye', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#8854d0', strokeWidth: 2 } },
-          { id: 'e4', source: 'modulo2', target: 'leccion2', label: 'incluye', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#8854d0', strokeWidth: 2 } },
-        ],
-      };
+      let nodes = [];
+      let edges = [];
+      let yCurso = 50;
+      let yModulo = 200;
+      let yLeccion = 350;
+      let x = 100;
+      data.cursos.forEach((curso, idx) => {
+        const cursoId = `curso_${curso.id}`;
+        nodes.push({ id: cursoId, data: { label: `Curso: ${curso.nombre}` }, position: { x: x + idx * 250, y: yCurso }, style: nodeStyles.curso });
+        if (Array.isArray(curso.modulos)) {
+          curso.modulos.forEach((modulo, mIdx) => {
+            const moduloId = `modulo_${curso.id}_${modulo.id}`;
+            nodes.push({ id: moduloId, data: { label: `Módulo: ${modulo.nombre}` }, position: { x: x + idx * 250 + mIdx * 120, y: yModulo }, style: nodeStyles.modulo });
+            edges.push({ id: `e_curso_modulo_${curso.id}_${modulo.id}`, source: cursoId, target: moduloId, label: 'contiene', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#f7b731', strokeWidth: 2 } });
+            if (Array.isArray(modulo.lecciones)) {
+              modulo.lecciones.forEach((leccion, lIdx) => {
+                const leccionId = `leccion_${curso.id}_${modulo.id}_${leccion.id}`;
+                nodes.push({ id: leccionId, data: { label: `Lección: ${leccion.nombre}` }, position: { x: x + idx * 250 + mIdx * 120 + lIdx * 60, y: yLeccion }, style: nodeStyles.leccion });
+                edges.push({ id: `e_modulo_leccion_${curso.id}_${modulo.id}_${leccion.id}`, source: moduloId, target: leccionId, label: 'incluye', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#8854d0', strokeWidth: 2 } });
+              });
+            }
+          });
+        }
+      });
+      return { nodes, edges };
     }
+
+    // Grafo de evaluaciones reales (por curso)
     if (selected === 'evaluaciones') {
-      return {
-        nodes: [
-          { id: 'eval1', data: { label: 'Evaluación: Parcial 1' }, position: { x: 200, y: 100 }, style: nodeStyles.evaluacion },
-          { id: 'eval2', data: { label: 'Evaluación: Final' }, position: { x: 400, y: 250 }, style: nodeStyles.evaluacion },
-        ],
-        edges: [
-          { id: 'e1', source: 'eval1', target: 'eval2', label: 'prerrequisito', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#e94560', strokeWidth: 2 } },
-        ],
-      };
+      let nodes = [];
+      let edges = [];
+      let yCurso = 50;
+      let yEval = 200;
+      let x = 100;
+      data.cursos.forEach((curso, idx) => {
+        const cursoId = `curso_${curso.id}`;
+        nodes.push({ id: cursoId, data: { label: `Curso: ${curso.nombre}` }, position: { x: x + idx * 250, y: yCurso }, style: nodeStyles.curso });
+        if (Array.isArray(curso.evaluaciones)) {
+          curso.evaluaciones.forEach((evalua, eIdx) => {
+            const evalId = `eval_${curso.id}_${evalua.id || eIdx}`;
+            nodes.push({ id: evalId, data: { label: `Evaluación: ${evalua.nombre}` }, position: { x: x + idx * 250 + eIdx * 120, y: yEval }, style: nodeStyles.evaluacion });
+            edges.push({ id: `e_curso_eval_${curso.id}_${evalua.id || eIdx}`, source: cursoId, target: evalId, label: 'tiene', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#e94560', strokeWidth: 2 } });
+          });
+        }
+      });
+      return { nodes, edges };
     }
-    if (selected === 'materiales') {
-      return {
-        nodes: [
-          { id: 'mat1', data: { label: 'Material: PDF Álgebra' }, position: { x: 200, y: 100 }, style: nodeStyles.material },
-          { id: 'leccion1', data: { label: 'Lección: Ecuaciones' }, position: { x: 350, y: 250 }, style: nodeStyles.leccion },
-        ],
-        edges: [
-          { id: 'e1', source: 'mat1', target: 'leccion1', label: 'asociado', markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#20c997', strokeWidth: 2 } },
-        ],
-      };
-    }
+
     return { nodes: [], edges: [] };
-  }, [selected]);
+  }, [selected, data]);
 
   return (
     <div className="admin-section">
@@ -83,7 +112,6 @@ function GraphsPanel({ data }) {
         <button className={`admin-btn${selected === 'usuarios' ? ' active' : ''}`} onClick={() => setSelected('usuarios')}>Usuarios</button>
         <button className={`admin-btn${selected === 'cursos' ? ' active' : ''}`} onClick={() => setSelected('cursos')}>Cursos</button>
         <button className={`admin-btn${selected === 'evaluaciones' ? ' active' : ''}`} onClick={() => setSelected('evaluaciones')}>Evaluaciones</button>
-        <button className={`admin-btn${selected === 'materiales' ? ' active' : ''}`} onClick={() => setSelected('materiales')}>Materiales</button>
       </div>
       <div style={{ background: '#23272f', borderRadius: 10, padding: 24, color: '#bfc9d1', minHeight: 360, height: 400 }}>
         <ReactFlow nodes={graphData.nodes} edges={graphData.edges} fitView style={{ width: '100%', height: 340 }}>

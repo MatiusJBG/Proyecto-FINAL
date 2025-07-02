@@ -26,7 +26,11 @@ function TeacherManager() {
   const getCursosAsignados = (doc) => {
     if (Array.isArray(doc.Cursos) && doc.Cursos.length > 0) {
       // Si el curso viene como objeto con Nombre o nombre
-      return doc.Cursos.map(c => c.Nombre || c.nombre || c.nombre_curso || c.Nombre_curso).join(', ');
+      const nombres = doc.Cursos.map(c => {
+        if (typeof c === 'string') return c;
+        return c.Nombre || c.nombre || c.nombre_curso || c.Nombre_curso || c.ID_Curso || 'Curso sin nombre';
+      });
+      return nombres.join(', ');
     }
     return 'Sin asignar';
   };
@@ -44,7 +48,7 @@ function TeacherManager() {
               <th style={{padding:'12px 8px'}}>Nombre</th>
               <th style={{padding:'12px 8px'}}>Email</th>
               <th style={{padding:'12px 8px'}}>Especialidad</th>
-              <th style={{padding:'12px 8px'}}>Curso</th>
+              {/* <th style={{padding:'12px 8px'}}>Curso</th> */}
               <th style={{padding:'12px 8px'}}>Fecha de registro</th>
             </tr>
           </thead>
@@ -55,7 +59,7 @@ function TeacherManager() {
                 <td style={{padding:'10px 8px'}}>{doc.Nombre || doc.nombre}</td>
                 <td style={{padding:'10px 8px'}}>{doc.Correo_electronico || doc.correo_electronico}</td>
                 <td style={{padding:'10px 8px'}}>{doc.Especialidad || doc.especialidad}</td>
-                <td style={{padding:'10px 8px'}}>{getCursosAsignados(doc)}</td>
+                {/* <td style={{padding:'10px 8px'}}>{getCursosAsignados(doc)}</td> */}
                 <td style={{padding:'10px 8px'}}>{doc.Fecha_registro || doc.fecha_registro}</td>
               </tr>
             ))}
