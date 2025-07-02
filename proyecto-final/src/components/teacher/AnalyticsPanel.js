@@ -39,7 +39,7 @@ function AnalyticsPanel({ teacherData }) {
   // Datos simulados para las analíticas
   const analyticsData = {
     totalStudents: 55,
-    totalCourses: teacherData.courses.length,
+    totalCourses: Array.isArray(teacherData?.courses) ? teacherData.courses.length : 0,
     averageGrade: 78.5,
     completionRate: 82.3,
     monthlyStats: [
@@ -140,7 +140,7 @@ function AnalyticsPanel({ teacherData }) {
         <div className="course-performance">
           <h3>Rendimiento por Curso</h3>
           <div className="course-stats">
-            {teacherData.courses.map(course => (
+            {(Array.isArray(teacherData?.courses) ? teacherData.courses : []).map(course => (
               <div key={course.id} className="course-stat">
                 <div className="course-info">
                   <h4>{course.name}</h4>

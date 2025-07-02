@@ -28,24 +28,28 @@ function TeacherManager() {
       {loading && <div>Cargando...</div>}
       {error && <div style={{color:'#e94560'}}>{error}</div>}
       {!loading && !error && (
-        <table className="admin-table">
+        <table className="admin-table" style={{width:'100%', borderCollapse:'collapse', background:'#23272f', borderRadius:10, boxShadow:'0 2px 12px #0002'}}>
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Email</th>
-              <th>Especialidad</th>
-              <th>Fecha de registro</th>
+            <tr style={{background:'#1a1d23', color:'#e94560'}}>
+              <th style={{padding:'12px 8px'}}>ID</th>
+              <th style={{padding:'12px 8px'}}>Nombre</th>
+              <th style={{padding:'12px 8px'}}>Email</th>
+              <th style={{padding:'12px 8px'}}>Especialidad</th>
+              <th style={{padding:'12px 8px'}}>Curso</th>
+              <th style={{padding:'12px 8px'}}>Fecha de registro</th>
             </tr>
           </thead>
           <tbody>
             {teachers.map(doc => (
               <tr key={doc.ID_Profesor || doc.id}>
-                <td>{doc.ID_Profesor || doc.id}</td>
-                <td>{doc.Nombre || doc.nombre}</td>
-                <td>{doc.Correo_electronico || doc.correo_electronico}</td>
-                <td>{doc.Especialidad || doc.especialidad}</td>
-                <td>{doc.Fecha_registro || doc.fecha_registro}</td>
+                <td style={{padding:'10px 8px'}}>{doc.ID_Profesor || doc.id}</td>
+                <td style={{padding:'10px 8px'}}>{doc.Nombre || doc.nombre}</td>
+                <td style={{padding:'10px 8px'}}>{doc.Correo_electronico || doc.correo_electronico}</td>
+                <td style={{padding:'10px 8px'}}>{doc.Especialidad || doc.especialidad}</td>
+                <td style={{padding:'10px 8px'}}>{Array.isArray(doc.Cursos) && doc.Cursos.length > 0
+                  ? doc.Cursos.map(c => c.Nombre || c.nombre).join(', ')
+                  : (doc.Curso || doc.curso || 'Sin asignar')}</td>
+                <td style={{padding:'10px 8px'}}>{doc.Fecha_registro || doc.fecha_registro}</td>
               </tr>
             ))}
           </tbody>
