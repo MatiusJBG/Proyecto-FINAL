@@ -8,6 +8,7 @@ import RecommendationCard from './RecommendationCard';
 import PendingEvaluations from './PendingEvaluations';
 import NotificationPanel from './NotificationPanel';
 import CourseEnrollment from './CourseEnrollment';
+import CourseTreeView from './CourseTreeView';
 import './StudentDashboard.css';
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -272,7 +273,6 @@ export default function StudentDashboard({ onLogout, userData }) {
                   estadisticas={estadisticas}
                 />
               </div>
-              
               {cursoActual && (
                 <CurrentCoursePanel 
                   course={cursoMock} 
@@ -280,12 +280,10 @@ export default function StudentDashboard({ onLogout, userData }) {
                   onProgresoUpdate={actualizarProgresoLeccion}
                 />
               )}
-              
               <div className="panel panel-recommendation">
                 <RecommendationCard recommendation={recomendacion} />
               </div>
             </section>
-            
             <section className="dashboard-lists">
               <PendingEvaluations 
                 evaluations={evaluacionesMock}
@@ -293,7 +291,6 @@ export default function StudentDashboard({ onLogout, userData }) {
               />
               <NotificationPanel notifications={notificacionesMock} />
             </section>
-            
             {/* Selector de cursos */}
             <section className="course-selector">
               <h3>Mis Cursos</h3>
@@ -312,6 +309,10 @@ export default function StudentDashboard({ onLogout, userData }) {
                 ))}
               </div>
             </section>
+            {/* Estructura jerárquica del curso actual */}
+            {cursoActual && (
+              <CourseTreeView cursoId={cursoActual.ID_Curso} />
+            )}
           </>
         )}
         {activeSection === 'notificaciones' && (
