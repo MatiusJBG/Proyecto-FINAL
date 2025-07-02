@@ -47,7 +47,6 @@ def cargar_datos_gestor():
                 modulo = Modulo(
                     id=modulo_data['ID_Modulo'],
                     nombre=modulo_data['Nombre'],
-                    descripcion=modulo_data.get('Descripcion', ''),
                     duracion_estimada=modulo_data.get('Duracion_estimada', 0),
                     id_curso=modulo_data['ID_Curso']
                 )
