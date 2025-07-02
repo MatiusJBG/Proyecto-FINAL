@@ -1,3 +1,5 @@
+# (Este endpoint debe ir después de la definición de app)
+
 
 
 from flask import Flask, jsonify, request
@@ -30,7 +32,6 @@ def crear_curso():
     nombre = data.get('nombre')
     descripcion = data.get('descripcion', '')
     estado = data.get('estado', 'activo')
-    imagen_url = data.get('imagen_url', None)
     duracion_estimada = data.get('duracion_estimada', None)
     id_profesor = data.get('id_profesor', None)
     if not nombre:
@@ -41,9 +42,9 @@ def crear_curso():
     try:
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO Cursos (Nombre, Descripcion, Estado, Imagen_url, Duracion_estimada, ID_Profesor)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        ''', (nombre, descripcion, estado, imagen_url, duracion_estimada, id_profesor))
+            INSERT INTO Cursos (Nombre, Descripcion, Estado, Duracion_estimada, ID_Profesor)
+            VALUES (%s, %s, %s, %s, %s)
+        ''', (nombre, descripcion, estado, duracion_estimada, id_profesor))
         conn.commit()
         return jsonify({'message': 'Curso creado correctamente'}), 201
     except Exception as e:
@@ -205,6 +206,22 @@ def add_usuario():
         cursor.execute('INSERT INTO usuarios (nombre, email) VALUES (%s, %s)', (nombre, email))
         conn.commit()
         return jsonify({'message': 'Usuario agregado'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para eliminar un curso
+@app.route('/api/cursos/<int:curso_id>', methods=['DELETE'])
+def eliminar_curso(curso_id):
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM Cursos WHERE ID_Curso = %s', (curso_id,))
+        conn.commit()
+        return jsonify({'message': 'Curso eliminado correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

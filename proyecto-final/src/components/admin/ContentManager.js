@@ -12,19 +12,8 @@ function ContentManager({ data, setData, selectedCurso, setSelectedCurso, select
   const [pendingModuloId, setPendingModuloId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ type: null, ids: null });
   // CRUD Cursos
-  const agregarCurso = (curso) => {
-    setData({
-      ...data,
-      cursos: [
-        ...data.cursos,
-        {
-          id: Date.now(),
-          nombre: curso.nombre,
-          descripcion: curso.descripcion,
-          modulos: []
-        }
-      ]
-    });
+  // Ya no agregamos el curso localmente, solo cerramos el modal y dejamos que el padre recargue
+  const agregarCurso = () => {
     setShowCourseForm(false);
   };
   const eliminarCurso = (id) => {
