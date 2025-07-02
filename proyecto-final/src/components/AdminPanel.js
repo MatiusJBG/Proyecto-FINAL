@@ -234,7 +234,7 @@ function AdminPanel() {
         {activeTab === 'crearusuario' && <CreateUser />}
         {activeTab === 'creardocente' && <CreateTeacher />}
         {activeTab === 'gestionusuarios' && <UserManagement />}
-        {activeTab === 'grafos' && <GraphsPanel />}
+        {activeTab === 'grafos' && <GraphsPanel data={data} />}
         {activeTab === 'estadisticas' && <StatsPanel />}
       </div>
     </div>
