@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './AdminPanel.css';
 import DoorIcon from './DoorIcon';
 import ContentManager from './admin/ContentManager';
-import MaterialManager from './admin/MaterialManager';
-import SearchManager from './admin/SearchManager';
 import EvaluationManager from './admin/EvaluationManager';
 import DecisionTreeManager from './admin/DecisionTreeManager';
 import SupportManager from './admin/SupportManager';
@@ -231,13 +229,10 @@ function AdminPanel() {
             setSelectedLeccion={setSelectedLeccion}
           />
         )}
-        {activeTab === 'materiales' && <MaterialManager />}
-        {activeTab === 'busqueda' && <SearchManager />}
-        {activeTab === 'arboldecision' && <DecisionTreeManager />}
+        {activeTab === 'arboldecision' && <DecisionTreeManager recomendaciones={recomendaciones} setRecomendaciones={setRecomendaciones} />}
         {activeTab === 'evaluaciones' && <EvaluationManager data={data} setData={setData} />}
         {activeTab === 'crearusuario' && <CreateUser />}
         {activeTab === 'creardocente' && <CreateTeacher />}
-        {activeTab === 'recomendaciones' && <DecisionTreeManager recomendaciones={recomendaciones} setRecomendaciones={setRecomendaciones} />}
         {activeTab === 'gestionusuarios' && <UserManagement />}
         {activeTab === 'grafos' && <GraphsPanel />}
         {activeTab === 'estadisticas' && <StatsPanel />}

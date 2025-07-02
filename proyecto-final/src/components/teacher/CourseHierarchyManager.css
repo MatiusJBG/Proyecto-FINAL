@@ -1,0 +1,37 @@
+/* Estilos básicos para CourseHierarchyManager */
+.course-hierarchy-container {
+  background: #23272f;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 2px 12px #0002;
+}
+
+.course-hierarchy-title {
+  color: #e94560;
+  font-size: 1.3em;
+  margin-bottom: 18px;
+}
+
+.module-list {
+  margin-bottom: 16px;
+}
+
+.module-item {
+  background: #262a33;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  padding: 12px 16px;
+  color: #fff;
+}
+
+.lesson-list {
+  margin-left: 24px;
+}
+
+.lesson-item {
+  background: #2b2f38;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  padding: 8px 12px;
+  color: #bfc9d1;
+}

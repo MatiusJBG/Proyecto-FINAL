@@ -17,8 +17,8 @@ function UserManagement() {
         </button>
       </div>
       <div style={{background:'#23272f', borderRadius:10, boxShadow:'0 2px 12px #0002', padding:24}}>
-        {active === 'alumnos' && <StudentManager />}
-        {active === 'docentes' && <TeacherManager />}
+        {active === 'alumnos' && <StudentManager key="alumnos" />}
+        {active === 'docentes' && <TeacherManager key="docentes" />}
       </div>
     </div>
   );
