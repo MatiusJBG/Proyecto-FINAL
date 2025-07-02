@@ -177,7 +177,7 @@ class TeacherApiService {
     return {
       id: courseData.ID_Curso,
       name: courseData.Nombre,
-      description: courseData.Descripcion || '',
+      // description: courseData.Descripcion || '',
       duration: courseData.Duracion_estimada || 0,
       status: courseData.Estado || 'activo',
       totalModules: courseData.total_modulos || 0,
@@ -210,7 +210,7 @@ class TeacherApiService {
     return {
       id: evaluationData.ID_Evaluacion,
       name: evaluationData.Nombre,
-      description: evaluationData.Descripcion || '',
+      // description: evaluationData.Descripcion || '',
       passingScore: evaluationData.Puntaje_aprobacion,
       maxAttempts: evaluationData.Max_intentos,
       lessonId: evaluationData.ID_Leccion,

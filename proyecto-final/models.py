@@ -99,10 +99,8 @@ class NodoContenido(ABC):
 class Curso(NodoContenido):
     """Clase para representar un curso"""
     
-    def __init__(self, id: int, nombre: str, descripcion: str = "", 
-                 duracion_estimada: int = 0, id_profesor: Optional[int] = None):
+    def __init__(self, id: int, nombre: str, duracion_estimada: int = 0, id_profesor: Optional[int] = None):
         super().__init__(id, nombre)
-        self.descripcion = descripcion
         self.duracion_estimada = duracion_estimada
         self.id_profesor = id_profesor
         self.estado = "activo"
@@ -120,7 +118,6 @@ class Curso(NodoContenido):
         """Convierte el curso a diccionario"""
         base_dict = super().to_dict()
         base_dict.update({
-            'descripcion': self.descripcion,
             'duracion_estimada': self.duracion_estimada,
             'id_profesor': self.id_profesor,
             'estado': self.estado,
@@ -132,10 +129,8 @@ class Curso(NodoContenido):
 class Modulo(NodoContenido):
     """Clase para representar un módulo"""
     
-    def __init__(self, id: int, nombre: str, descripcion: str = "", 
-                 duracion_estimada: int = 0, id_curso: int = 0):
+    def __init__(self, id: int, nombre: str, duracion_estimada: int = 0, id_curso: int = 0):
         super().__init__(id, nombre)
-        self.descripcion = descripcion
         self.duracion_estimada = duracion_estimada
         self.id_curso = id_curso
     
@@ -151,7 +146,6 @@ class Modulo(NodoContenido):
         """Convierte el módulo a diccionario"""
         base_dict = super().to_dict()
         base_dict.update({
-            'descripcion': self.descripcion,
             'duracion_estimada': self.duracion_estimada,
             'id_curso': self.id_curso,
             'lecciones': [leccion.to_dict() for leccion in self.obtener_lecciones()]

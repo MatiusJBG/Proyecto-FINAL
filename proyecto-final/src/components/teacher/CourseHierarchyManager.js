@@ -53,7 +53,7 @@ function CourseHierarchyManager({ course, onNotification }) {
 
   // Manejar formularios
   const handleShowModuleForm = () => {
-    setFormData({ nombre: '', descripcion: '', duracion_estimada: 0 });
+    setFormData({ nombre: '', duracion_estimada: 0 });
     setShowModuleForm(true);
     setShowLessonForm(false);
     setShowEvaluationForm(false);
@@ -61,7 +61,7 @@ function CourseHierarchyManager({ course, onNotification }) {
 
   const handleShowLessonForm = (module) => {
     setSelectedModule(module);
-    setFormData({ nombre: '', descripcion: '', contenido: '', duracion_estimada: 0, es_obligatoria: true });
+    setFormData({ nombre: '', contenido: '', duracion_estimada: 0, es_obligatoria: true });
     setShowLessonForm(true);
     setShowModuleForm(false);
     setShowEvaluationForm(false);
@@ -71,7 +71,6 @@ function CourseHierarchyManager({ course, onNotification }) {
     setSelectedLesson(lesson);
     setFormData({ 
       nombre: '', 
-      descripcion: '', 
       puntaje_aprobacion: 70, 
       max_intentos: 3 
     });
@@ -96,7 +95,6 @@ function CourseHierarchyManager({ course, onNotification }) {
       try {
         const moduleData = {
           nombre: formData.nombre,
-          descripcion: formData.descripcion,
           duracion_estimada: parseInt(formData.duracion_estimada) || 0
         };
         
@@ -127,7 +125,6 @@ function CourseHierarchyManager({ course, onNotification }) {
       try {
         const lessonData = {
           nombre: formData.nombre,
-          descripcion: formData.descripcion,
           contenido: formData.contenido,
           duracion_estimada: parseInt(formData.duracion_estimada) || 0,
           es_obligatoria: formData.es_obligatoria !== false
@@ -413,15 +410,7 @@ function CourseHierarchyManager({ course, onNotification }) {
                   required
                 />
               </div>
-              <div className="form-group">
-                <label>Descripción</label>
-                <textarea
-                  value={formData.descripcion || ''}
-                  onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
-                  placeholder="Descripción de la lección..."
-                  rows="3"
-                />
-              </div>
+              {/* Descripción eliminada porque no existe en la tabla Lecciones */}
               <div className="form-group">
                 <label>Contenido</label>
                 <textarea
