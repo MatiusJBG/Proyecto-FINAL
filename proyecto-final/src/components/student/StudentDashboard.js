@@ -314,6 +314,7 @@ export default function StudentDashboard({ onLogout, userData }) {
             <section className="dashboard-lists">
               <PendingEvaluations 
                 evaluations={evaluacionesMock}
+                estudianteId={userData.ID_Estudiante}
                 onEvaluationComplete={registrarResultadoEvaluacion}
               />
               <NotificationPanel notifications={notificacionesMock} />

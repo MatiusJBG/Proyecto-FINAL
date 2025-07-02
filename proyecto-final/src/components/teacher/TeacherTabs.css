@@ -4,7 +4,6 @@
   gap: 0.5rem;
   padding: 0 1rem;
 }
-
 .teacher-tab {
   display: flex;
   align-items: center;
@@ -12,7 +11,7 @@
   padding: 1rem 1.5rem;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: #b0b8c1;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -20,15 +19,17 @@
   width: 100%;
 }
 
+
 .teacher-tab:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: #23283b;
+  color: #f3f6fa;
   transform: translateX(5px);
 }
 
+  
 .teacher-tab.active {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: #23283b;
+  color: #f3f6fa;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 

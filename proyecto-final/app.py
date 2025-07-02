@@ -10,6 +10,105 @@ from models import (GestorContenido, GestorMateriales, Curso, Modulo, Leccion, R
 app = Flask(__name__)
 CORS(app)
 
+# ...existing code...
+
+# Endpoint para agregar preguntas a una evaluación
+@app.route('/api/evaluaciones/<int:evaluacion_id>/preguntas', methods=['POST'])
+def agregar_pregunta_evaluacion(evaluacion_id):
+    data = request.json
+    texto = data.get('texto')
+    puntaje = data.get('puntaje', 1.0)
+    respuesta_correcta = data.get('respuesta_correcta', '')
+    if not texto:
+        return jsonify({'error': 'El texto de la pregunta es obligatorio'}), 400
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO Preguntas (ID_Evaluacion, Texto, Puntaje, Respuesta_correcta)
+            VALUES (%s, %s, %s, %s)
+        ''', (evaluacion_id, texto, puntaje, respuesta_correcta))
+        pregunta_id = cursor.lastrowid
+        conn.commit()
+        return jsonify({'message': 'Pregunta agregada exitosamente', 'pregunta_id': pregunta_id}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para que el estudiante envíe respuestas y reciba comprobante/calificación
+@app.route('/api/evaluaciones/<int:evaluacion_id>/responder', methods=['POST'])
+def responder_evaluacion(evaluacion_id):
+    data = request.json
+    estudiante_id = data.get('estudiante_id')
+    respuestas = data.get('respuestas')  # Lista de {id_pregunta, respuesta}
+    if not estudiante_id or not respuestas:
+        return jsonify({'error': 'Datos incompletos'}), 400
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        # Obtener preguntas y respuestas correctas
+        cursor.execute('SELECT ID_Pregunta, Puntaje, Respuesta_correcta FROM Preguntas WHERE ID_Evaluacion = %s', (evaluacion_id,))
+        preguntas = {row['ID_Pregunta']: row for row in cursor.fetchall()}
+        puntaje_obtenido = 0.0
+        puntaje_maximo = 0.0
+        detalles = []
+        for r in respuestas:
+            id_pregunta = r.get('id_pregunta')
+            respuesta = r.get('respuesta', '')
+            preg = preguntas.get(id_pregunta)
+            if not preg:
+                continue
+            puntaje_maximo += float(preg['Puntaje'])
+            es_correcta = (respuesta.strip().lower() == (preg['Respuesta_correcta'] or '').strip().lower())
+            if es_correcta:
+                puntaje_obtenido += float(preg['Puntaje'])
+            detalles.append({
+                'id_pregunta': id_pregunta,
+                'respuesta_estudiante': respuesta,
+                'respuesta_correcta': preg['Respuesta_correcta'],
+                'puntaje': preg['Puntaje'],
+                'es_correcta': es_correcta
+            })
+            # Registrar respuesta individual
+            cursor.execute('''
+                INSERT INTO Respuestas_Estudiante (ID_Estudiante, ID_Evaluacion, ID_Pregunta, Respuesta, Fecha_respuesta)
+                VALUES (%s, %s, %s, %s, NOW())
+            ''', (estudiante_id, evaluacion_id, id_pregunta, respuesta))
+        # Registrar resultado global
+        cursor.execute('''
+            INSERT INTO Resultados_Evaluaciones (ID_Estudiante, ID_Evaluacion, Puntaje, Tiempo_utilizado)
+            VALUES (%s, %s, %s, %s)
+        ''', (estudiante_id, evaluacion_id, puntaje_obtenido, 0))
+        conn.commit()
+        comprobante = {
+            'puntaje_obtenido': puntaje_obtenido,
+            'puntaje_maximo': puntaje_maximo,
+            'detalles': detalles
+        }
+        return jsonify({'message': 'Respuestas registradas', 'comprobante': comprobante}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+from flask import Flask, jsonify, request
+from db_connect import get_connection
+from flask_cors import CORS
+from datetime import datetime
+import hashlib
+from models import (GestorContenido, GestorMateriales, Curso, Modulo, Leccion, Recurso,
+                   GestorProfesor, GestorCursosProfesor, GestorEvaluacionesProfesor, 
+                   GestorEstudiantesProfesor, Profesor, Evaluacion, ResultadoEvaluacion, Matricula)
+
+app = Flask(__name__)
+CORS(app)
+
 # Inicializar gestores orientados a objetos
 gestor_contenido = GestorContenido()
 gestor_materiales = GestorMateriales(gestor_contenido)
@@ -58,6 +157,7 @@ def cargar_datos_gestor():
                     leccion = Leccion(
                         id=leccion_data['ID_Leccion'],
                         nombre=leccion_data['Nombre'],
+                        descripcion=leccion_data.get('Descripcion', ''),
                         contenido=leccion_data.get('Contenido', ''),
                         duracion_estimada=leccion_data.get('Duracion_estimada', 0),
                         id_modulo=leccion_data['ID_Modulo'],

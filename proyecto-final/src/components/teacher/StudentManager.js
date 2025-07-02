@@ -224,9 +224,13 @@ function StudentManager({ teacherData, teacherStats }) {
                   <div className="evaluations-info">
                     <FiTrendingUp />
                     <span>{student.evaluationsTaken} realizadas</span>
-                    {student.averageScore > 0 && (
+                    {typeof student.averageScore === 'number' && !isNaN(student.averageScore) ? (
                       <div className="average-score">
                         Promedio: {student.averageScore.toFixed(1)}
+                      </div>
+                    ) : (
+                      <div className="average-score">
+                        Promedio: N/A
                       </div>
                     )}
                   </div>
@@ -283,7 +287,7 @@ function StudentManager({ teacherData, teacherStats }) {
                 <p><strong>Progreso:</strong> {selectedStudent.progress.toFixed(1)}%</p>
                 <p><strong>Lecciones completadas:</strong> {selectedStudent.lessonsCompleted}</p>
                 <p><strong>Evaluaciones realizadas:</strong> {selectedStudent.evaluationsTaken}</p>
-                <p><strong>Promedio evaluaciones:</strong> {selectedStudent.averageScore.toFixed(1)}</p>
+                <p><strong>Promedio evaluaciones:</strong> {typeof selectedStudent.averageScore === 'number' && !isNaN(selectedStudent.averageScore) ? selectedStudent.averageScore.toFixed(1) : 'N/A'}</p>
               </div>
               <div className="student-history-section">
                 <h4><FiClock /> Historial de Interacción</h4>

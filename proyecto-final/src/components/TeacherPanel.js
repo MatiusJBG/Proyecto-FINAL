@@ -7,6 +7,7 @@ import StudentManager from './teacher/StudentManager';
 
 import GradeManager from './teacher/GradeManager';
 import AnalyticsPanel from './teacher/AnalyticsPanel';
+import ExamManager from './teacher/ExamManager';
 import teacherApiService from '../services/teacherApi';
 
 function TeacherPanel({ onLogout, userData }) {
@@ -148,6 +149,11 @@ function TeacherPanel({ onLogout, userData }) {
             />
           )}
 
+          {activeTab === 'examenes' && (
+            <ExamManager 
+              teacherData={teacherData}
+            />
+          )}
           {activeTab === 'calificaciones' && (
             <GradeManager 
               teacherData={teacherData}

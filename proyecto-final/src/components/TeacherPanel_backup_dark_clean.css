@@ -1,0 +1,25 @@
+.teacher-panel-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #181c24;
+}
+
+.teacher-sidebar {
+  width: 280px;
+  background: linear-gradient(135deg, #23283b 0%, #181c24 100%);
+  color: #f3f6fa;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-header {
+  padding: 2rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.teacher-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}

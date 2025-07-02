@@ -155,12 +155,92 @@ class Modulo(NodoContenido):
         })
         return base_dict
 
+class Examen:
+    """Clase para representar un examen asociado a una lección o módulo"""
+    def __init__(self, id: int, titulo: str, id_leccion: int = None, id_modulo: int = None, id_profesor: int = None, ponderacion: float = 1.0):
+        self.id = id
+        self.titulo = titulo
+        self.id_leccion = id_leccion
+        self.id_modulo = id_modulo
+        self.id_profesor = id_profesor
+        self.preguntas: list[Pregunta] = []
+        self.ponderacion = ponderacion
+        self.fecha_creacion = datetime.now()
+
+    def agregar_pregunta(self, pregunta: 'Pregunta'):
+        self.preguntas.append(pregunta)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'titulo': self.titulo,
+            'id_leccion': self.id_leccion,
+            'id_modulo': self.id_modulo,
+            'id_profesor': self.id_profesor,
+            'ponderacion': self.ponderacion,
+            'fecha_creacion': self.fecha_creacion.isoformat(),
+            'preguntas': [p.to_dict() for p in self.preguntas]
+        }
+
+class Pregunta:
+    """Clase para representar una pregunta de examen"""
+    def __init__(self, id: int, texto: str, puntaje: float = 1.0, respuesta_correcta: str = ""):
+        self.id = id
+        self.texto = texto
+        self.puntaje = puntaje
+        self.respuesta_correcta = respuesta_correcta
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'texto': self.texto,
+            'puntaje': self.puntaje,
+            'respuesta_correcta': self.respuesta_correcta
+        }
+
+class RespuestaEstudiante:
+    """Respuesta de un estudiante a una pregunta"""
+    def __init__(self, id_estudiante: int, id_examen: int, id_pregunta: int, respuesta: str, fecha_respuesta: datetime = None):
+        self.id_estudiante = id_estudiante
+        self.id_examen = id_examen
+        self.id_pregunta = id_pregunta
+        self.respuesta = respuesta
+        self.fecha_respuesta = fecha_respuesta or datetime.now()
+
+    def to_dict(self):
+        return {
+            'id_estudiante': self.id_estudiante,
+            'id_examen': self.id_examen,
+            'id_pregunta': self.id_pregunta,
+            'respuesta': self.respuesta,
+            'fecha_respuesta': self.fecha_respuesta.isoformat()
+        }
+
+class CalificacionExamen:
+    """Calificación de un estudiante en un examen"""
+    def __init__(self, id_estudiante: int, id_examen: int, puntaje_obtenido: float, puntaje_maximo: float, detalles: dict = None):
+        self.id_estudiante = id_estudiante
+        self.id_examen = id_examen
+        self.puntaje_obtenido = puntaje_obtenido
+        self.puntaje_maximo = puntaje_maximo
+        self.detalles = detalles or {}
+
+    def to_dict(self):
+        return {
+            'id_estudiante': self.id_estudiante,
+            'id_examen': self.id_examen,
+            'puntaje_obtenido': self.puntaje_obtenido,
+            'puntaje_maximo': self.puntaje_maximo,
+            'detalles': self.detalles
+        }
+
 class Leccion(NodoContenido):
     """Clase para representar una lección"""
     
-    def __init__(self, id: int, nombre: str, contenido: str = "", 
+    def __init__(self, id: int, nombre: str, descripcion: str = "", contenido: str = "", 
                  duracion_estimada: int = 0, id_modulo: int = 0, es_obligatoria: bool = True):
         super().__init__(id, nombre)
+        self.descripcion = descripcion
         self.contenido = contenido
         self.duracion_estimada = duracion_estimada
         self.id_modulo = id_modulo
@@ -189,6 +269,7 @@ class Leccion(NodoContenido):
         """Convierte la lección a diccionario"""
         base_dict = super().to_dict()
         base_dict.update({
+            'descripcion': self.descripcion,
             'contenido': self.contenido,
             'duracion_estimada': self.duracion_estimada,
             'id_modulo': self.id_modulo,

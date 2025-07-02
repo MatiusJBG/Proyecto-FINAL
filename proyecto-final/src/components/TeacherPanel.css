@@ -1,21 +1,21 @@
 .teacher-panel-container {
   display: flex;
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: #181c24;
 }
 
 .teacher-sidebar {
   width: 280px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #23283b 0%, #181c24 100%);
+  color: #f3f6fa;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-header {
   padding: 2rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .teacher-profile {
@@ -24,6 +24,81 @@
   gap: 1rem;
 }
 
+.teacher-panel-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #181c24;
+}
+
+.teacher-sidebar {
+  width: 280px;
+  background: linear-gradient(135deg, #23283b 0%, #181c24 100%);
+  color: #f3f6fa;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-header {
+  padding: 2rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.teacher-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.teacher-panel-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #181c24;
+}
+
+.teacher-sidebar {
+  width: 280px;
+  background: linear-gradient(135deg, #23283b 0%, #181c24 100%);
+  color: #f3f6fa;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-header {
+  padding: 2rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.teacher-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.teacher-panel-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #181c24;
+}
+
+.teacher-sidebar {
+  width: 280px;
+  background: linear-gradient(135deg, #23283b 0%, #181c24 100%);
+  color: #f3f6fa;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-header {
+  padding: 2rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.teacher-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
 .teacher-info h3 {
   margin: 0;
   font-size: 1.1rem;
@@ -46,70 +121,60 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+
 .logout-btn {
   width: 100%;
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  background: #e74c3c;
+  border: none;
+  color: #fff;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease;
 }
 
 .logout-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #c0392b;
   transform: translateY(-1px);
 }
-
-.teacher-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
 .teacher-header {
-  background: white;
+  background: #23283b;
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #23283b;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
 }
 
 .header-left h1 {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 700;
-  color: #1a202c;
+.teacher-header {
+  background: #23283b;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #23283b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.header-left h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f3f6fa;
 }
 
 .header-left p {
   margin: 0.25rem 0 0 0;
-  color: #718096;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.notifications {
-  position: relative;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 8px;
-  transition: background-color 0.3s ease;
-}
-
-.notifications:hover {
-  background-color: #f7fafc;
+  color: #b0b8c1;
 }
 
 .notification-badge {
@@ -127,6 +192,36 @@
   justify-content: center;
 }
 
+.notifications {
+  position: relative;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+  color: #f3f6fa;
+}
+
+.notifications:hover {
+  background-color: #23283b;
+}
+
+.teacher-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background: #23283b;
+  color: #f3f6fa;
+}
+
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #181c24;
+}
 .settings-btn {
   padding: 0.5rem;
   background: none;
@@ -134,41 +229,11 @@
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  color: #f3f6fa;
 }
 
 .settings-btn:hover {
-  background-color: #f7fafc;
-}
-
-.teacher-content {
-  flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
-}
-
-/* Estados de carga y error */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  background: #f8f9fa;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e3e3e3;
-  border-top: 4px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  background-color: #23283b;
 }
 
 .error-container {
@@ -177,38 +242,27 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: #f8f9fa;
-  text-align: center;
+  background: #181c24;
+.teacher-content {
+  flex: 1;
   padding: 2rem;
+  overflow-y: auto;
+  background: #23283b;
+  color: #f3f6fa;
 }
-
-.error-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.error-container h3 {
-  color: #dc3545;
   margin-bottom: 0.5rem;
 }
 
 .error-container p {
   color: #6c757d;
-  margin-bottom: 1.5rem;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.btn-primary:hover {
-  background: #0056b3;
+/* Estados de carga y error */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #181c24;
 }
 
 .btn-primary:disabled {
@@ -231,7 +285,16 @@
     padding: 1rem;
   }
   
-  .teacher-content {
-    padding: 1rem;
-  }
-} 
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #181c24;
+  text-align: center;
+  padding: 2rem;
+}
+
+}
+}}
