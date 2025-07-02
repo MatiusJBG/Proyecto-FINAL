@@ -257,7 +257,25 @@ export default function StudentDashboard({ onLogout, userData }) {
       <Sidebar onLogout={onLogout} userData={userData} onSelectSection={setActiveSection} activeSection={activeSection} />
       <main className="dashboard-main">
         <UserHeader userData={userData} />
-        
+        {activeSection === 'cursos' && (
+          <section className="course-selector">
+            <h3>Mis Cursos</h3>
+            <div className="course-list">
+              {cursosMatriculados.map(curso => (
+                <button
+                  key={curso.ID_Curso}
+                  className={`course-item ${cursoActual?.ID_Curso === curso.ID_Curso ? 'active' : ''}`}
+                  onClick={() => cambiarCursoActual(curso)}
+                >
+                  <div className="course-info">
+                    <h4>{curso.Nombre}</h4>
+                    <p>Progreso: {Math.round(curso.Progreso_total || 0)}%</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
         {activeSection === 'matriculas' && (
           <CourseEnrollment 
             userData={userData} 
@@ -290,24 +308,6 @@ export default function StudentDashboard({ onLogout, userData }) {
                 onEvaluationComplete={registrarResultadoEvaluacion}
               />
               <NotificationPanel notifications={notificacionesMock} />
-            </section>
-            {/* Selector de cursos */}
-            <section className="course-selector">
-              <h3>Mis Cursos</h3>
-              <div className="course-list">
-                {cursosMatriculados.map(curso => (
-                  <button
-                    key={curso.ID_Curso}
-                    className={`course-item ${cursoActual?.ID_Curso === curso.ID_Curso ? 'active' : ''}`}
-                    onClick={() => cambiarCursoActual(curso)}
-                  >
-                    <div className="course-info">
-                      <h4>{curso.Nombre}</h4>
-                      <p>Progreso: {Math.round(curso.Progreso_total || 0)}%</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
             </section>
             {/* Estructura jerárquica del curso actual */}
             {cursoActual && (
