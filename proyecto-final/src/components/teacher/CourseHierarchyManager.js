@@ -3,7 +3,7 @@ import { FiPlus, FiEdit, FiTrash2, FiChevronDown, FiChevronRight, FiBook, FiFile
 import './CourseHierarchyManager.css';
 import teacherApiService from '../../services/teacherApi';
 
-function CourseHierarchyManager({ course }) {
+function CourseHierarchyManager({ course, onNotification }) {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -53,7 +53,7 @@ function CourseHierarchyManager({ course }) {
 
   // Manejar formularios
   const handleShowModuleForm = () => {
-    setFormData({ nombre: '', descripcion: '' });
+    setFormData({ nombre: '', descripcion: '', duracion_estimada: 0 });
     setShowModuleForm(true);
     setShowLessonForm(false);
     setShowEvaluationForm(false);
@@ -61,7 +61,7 @@ function CourseHierarchyManager({ course }) {
 
   const handleShowLessonForm = (module) => {
     setSelectedModule(module);
-    setFormData({ nombre: '', descripcion: '', contenido: '' });
+    setFormData({ nombre: '', descripcion: '', contenido: '', duracion_estimada: 0, es_obligatoria: true });
     setShowLessonForm(true);
     setShowModuleForm(false);
     setShowEvaluationForm(false);
@@ -97,21 +97,25 @@ function CourseHierarchyManager({ course }) {
         const moduleData = {
           nombre: formData.nombre,
           descripcion: formData.descripcion,
-          id_curso: course.id
+          duracion_estimada: parseInt(formData.duracion_estimada) || 0
         };
         
-        // Aquí iría la llamada al API para crear módulo
-        console.log('Creando módulo:', moduleData);
+        // Llamada al API para crear módulo
+        await teacherApiService.createModule(course.id, moduleData);
         
         // Recargar módulos
         const modulesData = await teacherApiService.getCourseModules(course.id);
         setModules(modulesData);
         
         handleCloseForms();
-        alert('Módulo creado exitosamente');
+        if (onNotification) {
+          onNotification('Módulo creado exitosamente', 'success');
+        }
       } catch (err) {
         console.error('Error creando módulo:', err);
-        alert('Error al crear el módulo: ' + err.message);
+        if (onNotification) {
+          onNotification('Error al crear el módulo: ' + err.message, 'error');
+        }
       }
     }
   };
@@ -125,21 +129,26 @@ function CourseHierarchyManager({ course }) {
           nombre: formData.nombre,
           descripcion: formData.descripcion,
           contenido: formData.contenido,
-          id_modulo: selectedModule.ID_Modulo
+          duracion_estimada: parseInt(formData.duracion_estimada) || 0,
+          es_obligatoria: formData.es_obligatoria !== false
         };
         
-        // Aquí iría la llamada al API para crear lección
-        console.log('Creando lección:', lessonData);
+        // Llamada al API para crear lección
+        await teacherApiService.createLesson(selectedModule.ID_Modulo, lessonData);
         
         // Recargar módulos
         const modulesData = await teacherApiService.getCourseModules(course.id);
         setModules(modulesData);
         
         handleCloseForms();
-        alert('Lección creada exitosamente');
+        if (onNotification) {
+          onNotification('Lección creada exitosamente', 'success');
+        }
       } catch (err) {
         console.error('Error creando lección:', err);
-        alert('Error al crear la lección: ' + err.message);
+        if (onNotification) {
+          onNotification('Error al crear la lección: ' + err.message, 'error');
+        }
       }
     }
   };
@@ -152,23 +161,26 @@ function CourseHierarchyManager({ course }) {
         const evaluationData = {
           nombre: formData.nombre,
           descripcion: formData.descripcion,
-          puntaje_aprobacion: parseInt(formData.puntaje_aprobacion),
-          max_intentos: parseInt(formData.max_intentos),
-          id_leccion: selectedLesson.ID_Leccion
+          puntaje_aprobacion: parseFloat(formData.puntaje_aprobacion),
+          max_intentos: parseInt(formData.max_intentos)
         };
         
-        // Aquí iría la llamada al API para crear evaluación
-        console.log('Creando evaluación:', evaluationData);
+        // Llamada al API para crear evaluación
+        await teacherApiService.createLessonEvaluation(selectedLesson.ID_Leccion, evaluationData);
         
         // Recargar módulos
         const modulesData = await teacherApiService.getCourseModules(course.id);
         setModules(modulesData);
         
         handleCloseForms();
-        alert('Evaluación creada exitosamente');
+        if (onNotification) {
+          onNotification('Evaluación creada exitosamente', 'success');
+        }
       } catch (err) {
         console.error('Error creando evaluación:', err);
-        alert('Error al crear la evaluación: ' + err.message);
+        if (onNotification) {
+          onNotification('Error al crear la evaluación: ' + err.message, 'error');
+        }
       }
     }
   };
@@ -361,6 +373,16 @@ function CourseHierarchyManager({ course }) {
                   rows="3"
                 />
               </div>
+              <div className="form-group">
+                <label>Duración Estimada (minutos)</label>
+                <input
+                  type="number"
+                  value={formData.duracion_estimada || 0}
+                  onChange={(e) => setFormData({...formData, duracion_estimada: e.target.value})}
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
               <div className="form-actions">
                 <button type="submit" className="btn-primary">Crear Módulo</button>
                 <button type="button" className="btn-secondary" onClick={handleCloseForms}>
@@ -408,6 +430,28 @@ function CourseHierarchyManager({ course }) {
                   placeholder="Contenido de la lección..."
                   rows="5"
                 />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Duración Estimada (minutos)</label>
+                  <input
+                    type="number"
+                    value={formData.duracion_estimada || 0}
+                    onChange={(e) => setFormData({...formData, duracion_estimada: e.target.value})}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Es Obligatoria</label>
+                  <select
+                    value={formData.es_obligatoria ? 'true' : 'false'}
+                    onChange={(e) => setFormData({...formData, es_obligatoria: e.target.value === 'true'})}
+                  >
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
               </div>
               <div className="form-actions">
                 <button type="submit" className="btn-primary">Crear Lección</button>

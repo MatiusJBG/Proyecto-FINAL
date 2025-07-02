@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit, FiTrash2, FiUsers, FiTrendingUp, FiBook, FiClock } from 'react-icons/fi';
 import './CourseManager.css';
 import teacherApiService from '../../services/teacherApi';
+<<<<<<< HEAD
 import CourseHierarchyManager from './CourseHierarchyManager';
+=======
+import CourseManagementPage from './CourseManagementPage';
+>>>>>>> e6da6637d4aa0ed93f64f1e758abeb100378e17e
 
 function CourseManager({ teacherData, teacherStats }) {
   const [courses, setCourses] = useState([]);
@@ -65,6 +69,19 @@ function CourseManager({ teacherData, teacherStats }) {
           <p>Cargando cursos...</p>
         </div>
       </div>
+    );
+  }
+
+  // Mostrar la página de gestión si está seleccionada
+  if (showCourseManagement && selectedCourse) {
+    return (
+      <CourseManagementPage 
+        course={selectedCourse} 
+        onBack={() => {
+          setShowCourseManagement(false);
+          setSelectedCourse(null);
+        }}
+      />
     );
   }
 
@@ -209,20 +226,7 @@ function CourseManager({ teacherData, teacherStats }) {
         </div>
       )}
 
-      {/* Modal de Gestión del Curso */}
-      {showCourseManagement && selectedCourse && (
-        <div className="modal-overlay" onClick={handleCloseModals}>
-          <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Gestión del Curso: {selectedCourse.name}</h3>
-              <button className="modal-close" onClick={handleCloseModals}>×</button>
-            </div>
-            <div className="modal-body">
-              <CourseHierarchyManager course={selectedCourse} />
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

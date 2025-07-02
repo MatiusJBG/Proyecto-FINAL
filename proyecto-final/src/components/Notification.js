@@ -1,53 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { FiCheck, FiX, FiAlertCircle, FiInfo } from 'react-icons/fi';
 import './Notification.css';
 
-const Notification = ({ message, type = 'info', duration = 5000, onClose }) => {
+function Notification({ message, type = 'success', duration = 5000, onClose }) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     if (duration > 0) {
       const timer = setTimeout(() => {
         setIsVisible(false);
-        setTimeout(() => onClose && onClose(), 300);
+        if (onClose) onClose();
       }, duration);
+
       return () => clearTimeout(timer);
     }
   }, [duration, onClose]);
 
   const handleClose = () => {
     setIsVisible(false);
-    setTimeout(() => onClose && onClose(), 300);
-  };
-
-  const getIcon = () => {
-    switch (type) {
-      case 'success':
-        return <FiCheck />;
-      case 'error':
-        return <FiX />;
-      case 'warning':
-        return <FiAlertCircle />;
-      default:
-        return <FiInfo />;
-    }
+    if (onClose) onClose();
   };
 
   if (!isVisible) return null;
 
   return (
-    <div className={`notification notification-${type} ${isVisible ? 'show' : 'hide'}`}>
-      <div className="notification-icon">
-        {getIcon()}
-      </div>
+    <div className={`notification ${type} ${isVisible ? 'show' : 'hide'}`}>
       <div className="notification-content">
-        <p>{message}</p>
+        <span className="notification-icon">
+          {type === 'success' && '✅'}
+          {type === 'error' && '❌'}
+          {type === 'warning' && '⚠️'}
+          {type === 'info' && 'ℹ️'}
+        </span>
+        <span className="notification-message">{message}</span>
+        <button className="notification-close" onClick={handleClose}>
+          ×
+        </button>
       </div>
-      <button className="notification-close" onClick={handleClose}>
-        <FiX />
-      </button>
     </div>
   );
-};
+}
 
 export default Notification; 
