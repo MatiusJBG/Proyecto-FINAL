@@ -4,13 +4,10 @@ import './AdminTabs.css';
 function AdminTabs({ active, setActive }) {
   const tabs = [
     { key: 'contenido', label: 'Contenido' },
-    { key: 'materiales', label: 'Materiales' },
-    { key: 'busqueda', label: 'Búsqueda' },
-    { key: 'arboldecision', label: 'Árbol de Decisión' },
+    { key: 'arboldecision', label: 'Árbol de Decisiones' },
     { key: 'evaluaciones', label: 'Evaluaciones' },
     { key: 'crearusuario', label: 'Crear Alumno' },
     { key: 'creardocente', label: 'Crear Docente' },
-    { key: 'recomendaciones', label: 'Recomendaciones' },
     { key: 'gestionusuarios', label: 'Gestión de Usuarios' },
     { key: 'grafos', label: 'Grafos' },
     { key: 'estadisticas', label: 'Estadísticas' },

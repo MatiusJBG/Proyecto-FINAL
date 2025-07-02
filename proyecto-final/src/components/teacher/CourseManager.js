@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit, FiTrash2, FiUsers, FiTrendingUp, FiBook, FiClock } from 'react-icons/fi';
 import './CourseManager.css';
 import teacherApiService from '../../services/teacherApi';
+import CourseHierarchyManager from './CourseHierarchyManager';
 import CourseManagementPage from './CourseManagementPage';
 
 function CourseManager({ teacherData, teacherStats }) {
@@ -227,4 +228,4 @@ function CourseManager({ teacherData, teacherStats }) {
   );
 }
 
-export default CourseManager; 
+export default CourseManager;

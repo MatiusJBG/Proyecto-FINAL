@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 
 function TeacherManager() {
@@ -21,6 +20,16 @@ function TeacherManager() {
     };
     fetchTeachers();
   }, []);
+
+  // Función para mostrar los cursos asignados correctamente
+  // Ahora Cursos siempre es un array de objetos {ID_Curso, Nombre}
+  const getCursosAsignados = (doc) => {
+    if (Array.isArray(doc.Cursos) && doc.Cursos.length > 0) {
+      // Si el curso viene como objeto con Nombre o nombre
+      return doc.Cursos.map(c => c.Nombre || c.nombre || c.nombre_curso || c.Nombre_curso).join(', ');
+    }
+    return 'Sin asignar';
+  };
 
   return (
     <div className="admin-section">
@@ -46,9 +55,7 @@ function TeacherManager() {
                 <td style={{padding:'10px 8px'}}>{doc.Nombre || doc.nombre}</td>
                 <td style={{padding:'10px 8px'}}>{doc.Correo_electronico || doc.correo_electronico}</td>
                 <td style={{padding:'10px 8px'}}>{doc.Especialidad || doc.especialidad}</td>
-                <td style={{padding:'10px 8px'}}>{Array.isArray(doc.Cursos) && doc.Cursos.length > 0
-                  ? doc.Cursos.map(c => c.Nombre || c.nombre).join(', ')
-                  : (doc.Curso || doc.curso || 'Sin asignar')}</td>
+                <td style={{padding:'10px 8px'}}>{getCursosAsignados(doc)}</td>
                 <td style={{padding:'10px 8px'}}>{doc.Fecha_registro || doc.fecha_registro}</td>
               </tr>
             ))}
