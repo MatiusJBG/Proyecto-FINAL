@@ -520,4 +520,374 @@ class GestorMateriales:
                 for leccion in modulo.obtener_lecciones():
                     if leccion.id == leccion_id:
                         return leccion.recursos
-        return [] 
+        return []
+
+# ============================================================================
+# CLASES ESPECÍFICAS PARA EL PROFESOR
+# ============================================================================
+
+class Profesor:
+    """Clase para representar un profesor"""
+    
+    def __init__(self, id: int, nombre: str, correo_electronico: str, 
+                 especialidad: str, fecha_registro: datetime = None):
+        self.id = id
+        self.nombre = nombre
+        self.correo_electronico = correo_electronico
+        self.especialidad = especialidad
+        self.fecha_registro = fecha_registro or datetime.now()
+        self.cursos: List[Curso] = []
+    
+    def agregar_curso(self, curso: Curso) -> None:
+        """Agrega un curso al profesor"""
+        if curso not in self.cursos:
+            self.cursos.append(curso)
+    
+    def obtener_cursos(self) -> List[Curso]:
+        """Obtiene todos los cursos del profesor"""
+        return self.cursos
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convierte el profesor a diccionario"""
+        return {
+            'id': self.id,
+            'nombre': self.nombre,
+            'correo_electronico': self.correo_electronico,
+            'especialidad': self.especialidad,
+            'fecha_registro': self.fecha_registro.isoformat() if self.fecha_registro else None,
+            'total_cursos': len(self.cursos)
+        }
+
+class Evaluacion:
+    """Clase para representar una evaluación"""
+    
+    def __init__(self, id: int, nombre: str, descripcion: str = "", 
+                 puntaje_aprobacion: float = 70.0, max_intentos: int = 3,
+                 id_leccion: Optional[int] = None, id_modulo: Optional[int] = None):
+        self.id = id
+        self.nombre = nombre
+        self.descripcion = descripcion
+        self.puntaje_aprobacion = puntaje_aprobacion
+        self.max_intentos = max_intentos
+        self.id_leccion = id_leccion
+        self.id_modulo = id_modulo
+        self.resultados: List['ResultadoEvaluacion'] = []
+    
+    def agregar_resultado(self, resultado: 'ResultadoEvaluacion') -> None:
+        """Agrega un resultado a la evaluación"""
+        self.resultados.append(resultado)
+    
+    def obtener_estadisticas(self) -> Dict[str, Any]:
+        """Obtiene estadísticas de la evaluación"""
+        if not self.resultados:
+            return {
+                'total_intentos': 0,
+                'promedio_puntaje': 0,
+                'tasa_aprobacion': 0,
+                'mejor_puntaje': 0,
+                'peor_puntaje': 0
+            }
+        
+        puntajes = [r.puntaje for r in self.resultados]
+        aprobados = [r for r in self.resultados if r.aprobado]
+        
+        return {
+            'total_intentos': len(self.resultados),
+            'promedio_puntaje': sum(puntajes) / len(puntajes),
+            'tasa_aprobacion': len(aprobados) / len(self.resultados) * 100,
+            'mejor_puntaje': max(puntajes),
+            'peor_puntaje': min(puntajes)
+        }
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convierte la evaluación a diccionario"""
+        return {
+            'id': self.id,
+            'nombre': self.nombre,
+            'descripcion': self.descripcion,
+            'puntaje_aprobacion': self.puntaje_aprobacion,
+            'max_intentos': self.max_intentos,
+            'id_leccion': self.id_leccion,
+            'id_modulo': self.id_modulo,
+            'estadisticas': self.obtener_estadisticas()
+        }
+
+class ResultadoEvaluacion:
+    """Clase para representar un resultado de evaluación"""
+    
+    def __init__(self, id: int, id_estudiante: int, id_evaluacion: int, 
+                 puntaje: float, aprobado: bool, fecha_intento: datetime = None,
+                 tiempo_utilizado: int = 0):
+        self.id = id
+        self.id_estudiante = id_estudiante
+        self.id_evaluacion = id_evaluacion
+        self.puntaje = puntaje
+        self.aprobado = aprobado
+        self.fecha_intento = fecha_intento or datetime.now()
+        self.tiempo_utilizado = tiempo_utilizado
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convierte el resultado a diccionario"""
+        return {
+            'id': self.id,
+            'id_estudiante': self.id_estudiante,
+            'id_evaluacion': self.id_evaluacion,
+            'puntaje': self.puntaje,
+            'aprobado': self.aprobado,
+            'fecha_intento': self.fecha_intento.isoformat(),
+            'tiempo_utilizado': self.tiempo_utilizado
+        }
+
+class Matricula:
+    """Clase para representar una matrícula de estudiante"""
+    
+    def __init__(self, id: int, id_estudiante: int, id_curso: int, 
+                 estado: str = 'activo', progreso_total: float = 0.0,
+                 fecha_matricula: datetime = None):
+        self.id = id
+        self.id_estudiante = id_estudiante
+        self.id_curso = id_curso
+        self.estado = estado
+        self.progreso_total = progreso_total
+        self.fecha_matricula = fecha_matricula or datetime.now()
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convierte la matrícula a diccionario"""
+        return {
+            'id': self.id,
+            'id_estudiante': self.id_estudiante,
+            'id_curso': self.id_curso,
+            'estado': self.estado,
+            'progreso_total': self.progreso_total,
+            'fecha_matricula': self.fecha_matricula.isoformat()
+        }
+
+class GestorProfesor:
+    """Gestor principal para las operaciones del profesor"""
+    
+    def __init__(self):
+        self.profesores: Dict[int, Profesor] = {}
+        self.evaluaciones: Dict[int, Evaluacion] = {}
+        self.matriculas: Dict[int, Matricula] = {}
+    
+    def agregar_profesor(self, profesor: Profesor) -> None:
+        """Agrega un profesor al gestor"""
+        self.profesores[profesor.id] = profesor
+    
+    def obtener_profesor(self, profesor_id: int) -> Optional[Profesor]:
+        """Obtiene un profesor por ID"""
+        return self.profesores.get(profesor_id)
+    
+    def agregar_evaluacion(self, evaluacion: Evaluacion) -> None:
+        """Agrega una evaluación al gestor"""
+        self.evaluaciones[evaluacion.id] = evaluacion
+    
+    def obtener_evaluacion(self, evaluacion_id: int) -> Optional[Evaluacion]:
+        """Obtiene una evaluación por ID"""
+        return self.evaluaciones.get(evaluacion_id)
+    
+    def agregar_matricula(self, matricula: Matricula) -> None:
+        """Agrega una matrícula al gestor"""
+        self.matriculas[matricula.id] = matricula
+    
+    def obtener_matriculas_curso(self, curso_id: int) -> List[Matricula]:
+        """Obtiene todas las matrículas de un curso"""
+        return [m for m in self.matriculas.values() if m.id_curso == curso_id]
+    
+    def obtener_estadisticas_profesor(self, profesor_id: int) -> Dict[str, Any]:
+        """Obtiene estadísticas generales del profesor"""
+        profesor = self.obtener_profesor(profesor_id)
+        if not profesor:
+            return {}
+        
+        total_cursos = len(profesor.cursos)
+        total_estudiantes = 0
+        total_evaluaciones = 0
+        
+        for curso in profesor.cursos:
+            matriculas_curso = self.obtener_matriculas_curso(curso.id)
+            total_estudiantes += len(matriculas_curso)
+            
+            # Contar evaluaciones del curso
+            for modulo in curso.obtener_modulos():
+                for leccion in modulo.obtener_lecciones():
+                    # Aquí podrías agregar lógica para contar evaluaciones
+                    pass
+        
+        return {
+            'total_cursos': total_cursos,
+            'total_estudiantes': total_estudiantes,
+            'total_evaluaciones': total_evaluaciones,
+            'promedio_estudiantes_por_curso': total_estudiantes / total_cursos if total_cursos > 0 else 0
+        }
+
+class GestorCursosProfesor:
+    """Gestor específico para la gestión de cursos del profesor"""
+    
+    def __init__(self, gestor_profesor: GestorProfesor):
+        self.gestor_profesor = gestor_profesor
+    
+    def crear_curso(self, profesor_id: int, nombre: str, descripcion: str = "",
+                   duracion_estimada: int = 0) -> Optional[Curso]:
+        """Crea un nuevo curso para el profesor"""
+        profesor = self.gestor_profesor.obtener_profesor(profesor_id)
+        if not profesor:
+            return None
+        
+        # Generar ID temporal (en producción esto vendría de la BD)
+        curso_id = max([c.id for c in profesor.cursos], default=0) + 1
+        
+        curso = Curso(
+            id=curso_id,
+            nombre=nombre,
+            descripcion=descripcion,
+            duracion_estimada=duracion_estimada,
+            id_profesor=profesor_id
+        )
+        
+        profesor.agregar_curso(curso)
+        return curso
+    
+    def actualizar_curso(self, profesor_id: int, curso_id: int, 
+                        nombre: Optional[str] = None, descripcion: Optional[str] = None,
+                        duracion_estimada: Optional[int] = None) -> bool:
+        """Actualiza un curso del profesor"""
+        profesor = self.gestor_profesor.obtener_profesor(profesor_id)
+        if not profesor:
+            return False
+        
+        # Buscar el curso en la lista de cursos del profesor
+        curso = None
+        for c in profesor.cursos:
+            if c.id == curso_id:
+                curso = c
+                break
+        
+        if not curso:
+            return False
+        
+        if nombre:
+            curso.nombre = nombre
+        if descripcion:
+            curso.descripcion = descripcion
+        if duracion_estimada is not None:
+            curso.duracion_estimada = duracion_estimada
+        
+        return True
+    
+    def eliminar_curso(self, profesor_id: int, curso_id: int) -> bool:
+        """Elimina un curso del profesor"""
+        profesor = self.gestor_profesor.obtener_profesor(profesor_id)
+        if not profesor:
+            return False
+        
+        # Buscar y eliminar el curso de la lista
+        for i, curso in enumerate(profesor.cursos):
+            if curso.id == curso_id:
+                del profesor.cursos[i]
+                return True
+        
+        return False
+    
+    def obtener_cursos_profesor(self, profesor_id: int) -> List[Curso]:
+        """Obtiene todos los cursos de un profesor"""
+        profesor = self.gestor_profesor.obtener_profesor(profesor_id)
+        if not profesor:
+            return []
+        
+        return profesor.obtener_cursos()
+
+class GestorEvaluacionesProfesor:
+    """Gestor específico para la gestión de evaluaciones del profesor"""
+    
+    def __init__(self, gestor_profesor: GestorProfesor):
+        self.gestor_profesor = gestor_profesor
+    
+    def crear_evaluacion(self, nombre: str, descripcion: str = "",
+                        puntaje_aprobacion: float = 70.0, max_intentos: int = 3,
+                        id_leccion: Optional[int] = None, 
+                        id_modulo: Optional[int] = None) -> Optional[Evaluacion]:
+        """Crea una nueva evaluación"""
+        # Generar ID temporal
+        evaluacion_id = max([e.id for e in self.gestor_profesor.evaluaciones.values()], default=0) + 1
+        
+        evaluacion = Evaluacion(
+            id=evaluacion_id,
+            nombre=nombre,
+            descripcion=descripcion,
+            puntaje_aprobacion=puntaje_aprobacion,
+            max_intentos=max_intentos,
+            id_leccion=id_leccion,
+            id_modulo=id_modulo
+        )
+        
+        self.gestor_profesor.agregar_evaluacion(evaluacion)
+        return evaluacion
+    
+    def actualizar_evaluacion(self, evaluacion_id: int, nombre: Optional[str] = None,
+                             descripcion: Optional[str] = None, puntaje_aprobacion: Optional[float] = None,
+                             max_intentos: Optional[int] = None) -> bool:
+        """Actualiza una evaluación"""
+        evaluacion = self.gestor_profesor.obtener_evaluacion(evaluacion_id)
+        if not evaluacion:
+            return False
+        
+        if nombre:
+            evaluacion.nombre = nombre
+        if descripcion:
+            evaluacion.descripcion = descripcion
+        if puntaje_aprobacion is not None:
+            evaluacion.puntaje_aprobacion = puntaje_aprobacion
+        if max_intentos is not None:
+            evaluacion.max_intentos = max_intentos
+        
+        return True
+    
+    def eliminar_evaluacion(self, evaluacion_id: int) -> bool:
+        """Elimina una evaluación"""
+        if evaluacion_id in self.gestor_profesor.evaluaciones:
+            del self.gestor_profesor.evaluaciones[evaluacion_id]
+            return True
+        return False
+    
+    def obtener_evaluaciones_curso(self, curso_id: int) -> List[Evaluacion]:
+        """Obtiene todas las evaluaciones de un curso"""
+        # Esta implementación necesitaría acceso al gestor de contenido
+        # para navegar por la estructura del curso
+        return []
+
+class GestorEstudiantesProfesor:
+    """Gestor específico para la gestión de estudiantes del profesor"""
+    
+    def __init__(self, gestor_profesor: GestorProfesor):
+        self.gestor_profesor = gestor_profesor
+    
+    def obtener_estudiantes_curso(self, curso_id: int) -> List[Dict[str, Any]]:
+        """Obtiene todos los estudiantes matriculados en un curso"""
+        matriculas = self.gestor_profesor.obtener_matriculas_curso(curso_id)
+        
+        # En una implementación real, aquí obtendrías los datos del estudiante
+        # desde la base de datos usando el ID_Estudiante
+        estudiantes = []
+        for matricula in matriculas:
+            estudiantes.append({
+                'id_estudiante': matricula.id_estudiante,
+                'id_matricula': matricula.id,
+                'estado': matricula.estado,
+                'progreso_total': matricula.progreso_total,
+                'fecha_matricula': matricula.fecha_matricula.isoformat()
+            })
+        
+        return estudiantes
+    
+    def obtener_progreso_estudiante(self, estudiante_id: int, curso_id: int) -> Dict[str, Any]:
+        """Obtiene el progreso detallado de un estudiante en un curso"""
+        # Esta implementación necesitaría acceso a las tablas de progreso
+        return {
+            'estudiante_id': estudiante_id,
+            'curso_id': curso_id,
+            'progreso_total': 0,
+            'lecciones_completadas': 0,
+            'evaluaciones_aprobadas': 0,
+            'tiempo_total_dedicado': 0
+        } 

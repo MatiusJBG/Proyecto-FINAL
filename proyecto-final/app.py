@@ -3,7 +3,9 @@ from db_connect import get_connection
 from flask_cors import CORS
 from datetime import datetime
 import hashlib
-from models import GestorContenido, GestorMateriales, Curso, Modulo, Leccion, Recurso
+from models import (GestorContenido, GestorMateriales, Curso, Modulo, Leccion, Recurso,
+                   GestorProfesor, GestorCursosProfesor, GestorEvaluacionesProfesor, 
+                   GestorEstudiantesProfesor, Profesor, Evaluacion, ResultadoEvaluacion, Matricula)
 
 app = Flask(__name__)
 CORS(app)
@@ -11,6 +13,12 @@ CORS(app)
 # Inicializar gestores orientados a objetos
 gestor_contenido = GestorContenido()
 gestor_materiales = GestorMateriales(gestor_contenido)
+
+# Inicializar gestores específicos del profesor
+gestor_profesor = GestorProfesor()
+gestor_cursos_profesor = GestorCursosProfesor(gestor_profesor)
+gestor_evaluaciones_profesor = GestorEvaluacionesProfesor(gestor_profesor)
+gestor_estudiantes_profesor = GestorEstudiantesProfesor(gestor_profesor)
 
 # Función para cargar datos desde la base de datos al gestor de contenido
 def cargar_datos_gestor():
@@ -87,8 +95,71 @@ def cargar_datos_gestor():
     finally:
         conn.close()
 
+# Función para cargar datos del profesor desde la base de datos
+def cargar_datos_profesor():
+    """Carga los datos de profesores desde la base de datos"""
+    conn = get_connection()
+    if not conn:
+        return
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Cargar profesores
+        cursor.execute('SELECT * FROM Profesores')
+        profesores_data = cursor.fetchall()
+        
+        for profesor_data in profesores_data:
+            profesor = Profesor(
+                id=profesor_data['ID_Profesor'],
+                nombre=profesor_data['Nombre'],
+                correo_electronico=profesor_data['Correo_electronico'],
+                especialidad=profesor_data['Especialidad'],
+                fecha_registro=profesor_data['Fecha_registro']
+            )
+            gestor_profesor.agregar_profesor(profesor)
+        
+        # Cargar evaluaciones
+        cursor.execute('SELECT * FROM Evaluaciones')
+        evaluaciones_data = cursor.fetchall()
+        
+        for evaluacion_data in evaluaciones_data:
+            evaluacion = Evaluacion(
+                id=evaluacion_data['ID_Evaluacion'],
+                nombre=evaluacion_data['Nombre'],
+                descripcion=evaluacion_data.get('Descripcion', ''),
+                puntaje_aprobacion=float(evaluacion_data['Puntaje_aprobacion']),
+                max_intentos=evaluacion_data['Max_intentos'],
+                id_leccion=evaluacion_data.get('ID_Leccion'),
+                id_modulo=evaluacion_data.get('ID_Modulo')
+            )
+            gestor_profesor.agregar_evaluacion(evaluacion)
+        
+        # Cargar matrículas
+        cursor.execute('SELECT * FROM Matriculas')
+        matriculas_data = cursor.fetchall()
+        
+        for matricula_data in matriculas_data:
+            matricula = Matricula(
+                id=matricula_data['ID_Matricula'],
+                id_estudiante=matricula_data['ID_Estudiante'],
+                id_curso=matricula_data['ID_Curso'],
+                estado=matricula_data['Estado'],
+                progreso_total=float(matricula_data['Progreso_total']),
+                fecha_matricula=matricula_data['Fecha_matricula']
+            )
+            gestor_profesor.agregar_matricula(matricula)
+        
+        print(f"✅ Cargados {len(profesores_data)} profesores, {len(evaluaciones_data)} evaluaciones y {len(matriculas_data)} matrículas")
+        
+    except Exception as e:
+        print(f"❌ Error cargando datos del profesor: {e}")
+    finally:
+        conn.close()
+
 # Cargar datos al iniciar la aplicación
 cargar_datos_gestor()
+cargar_datos_profesor()
 
 # Función para hashear contraseñas
 def hash_password(password):
@@ -1100,6 +1171,393 @@ def buscar_en_curso(curso_id, termino):
         'total_resultados': len(resultados),
         'resultados': [nodo.to_dict() for nodo in resultados]
     })
+
+# ============================================================================
+# ENDPOINTS ESPECÍFICOS PARA EL PROFESOR
+# ============================================================================
+
+# Endpoint para obtener información del profesor
+@app.route('/api/profesor/<int:profesor_id>', methods=['GET'])
+def get_profesor_info(profesor_id):
+    """Obtiene la información completa de un profesor"""
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM Profesores WHERE ID_Profesor = %s', (profesor_id,))
+        profesor_data = cursor.fetchone()
+        
+        if not profesor_data:
+            return jsonify({'error': 'Profesor no encontrado'}), 404
+        
+        return jsonify(profesor_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para obtener cursos de un profesor
+@app.route('/api/profesor/<int:profesor_id>/cursos', methods=['GET'])
+def get_cursos_profesor(profesor_id):
+    """Obtiene todos los cursos de un profesor"""
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT c.*, 
+                   COUNT(DISTINCT m.ID_Modulo) as total_modulos,
+                   COUNT(DISTINCT l.ID_Leccion) as total_lecciones,
+                   COUNT(DISTINCT mat.ID_Matricula) as total_estudiantes
+            FROM Cursos c
+            LEFT JOIN Modulos m ON c.ID_Curso = m.ID_Curso
+            LEFT JOIN Lecciones l ON m.ID_Modulo = l.ID_Modulo
+            LEFT JOIN Matriculas mat ON c.ID_Curso = mat.ID_Curso
+            WHERE c.ID_Profesor = %s AND c.Estado = 'activo'
+            GROUP BY c.ID_Curso
+            ORDER BY c.Fecha_creacion DESC
+        ''', (profesor_id,))
+        cursos = cursor.fetchall()
+        
+        return jsonify(cursos)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para crear un nuevo curso
+@app.route('/api/profesor/<int:profesor_id>/cursos', methods=['POST'])
+def crear_curso_profesor(profesor_id):
+    """Crea un nuevo curso para el profesor"""
+    data = request.json
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion', '')
+    duracion_estimada = data.get('duracion_estimada', 0)
+    
+    if not nombre:
+        return jsonify({'error': 'El nombre del curso es obligatorio'}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO Cursos (Nombre, Descripcion, Duracion_estimada, ID_Profesor, Estado)
+            VALUES (%s, %s, %s, %s, 'activo')
+        ''', (nombre, descripcion, duracion_estimada, profesor_id))
+        conn.commit()
+        
+        curso_id = cursor.lastrowid
+        return jsonify({
+            'message': 'Curso creado exitosamente',
+            'curso_id': curso_id,
+            'nombre': nombre
+        }), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para actualizar un curso
+@app.route('/api/profesor/<int:profesor_id>/cursos/<int:curso_id>', methods=['PUT'])
+def actualizar_curso_profesor(profesor_id, curso_id):
+    """Actualiza un curso del profesor"""
+    data = request.json
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion')
+    duracion_estimada = data.get('duracion_estimada')
+    estado = data.get('estado')
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Verificar que el curso pertenece al profesor
+        cursor.execute('SELECT ID_Curso FROM Cursos WHERE ID_Curso = %s AND ID_Profesor = %s', 
+                      (curso_id, profesor_id))
+        if not cursor.fetchone():
+            return jsonify({'error': 'Curso no encontrado o no autorizado'}), 404
+        
+        # Construir query de actualización
+        update_fields = []
+        params = []
+        
+        if nombre is not None:
+            update_fields.append('Nombre = %s')
+            params.append(nombre)
+        if descripcion is not None:
+            update_fields.append('Descripcion = %s')
+            params.append(descripcion)
+        if duracion_estimada is not None:
+            update_fields.append('Duracion_estimada = %s')
+            params.append(duracion_estimada)
+        if estado is not None:
+            update_fields.append('Estado = %s')
+            params.append(estado)
+        
+        if update_fields:
+            params.append(curso_id)
+            params.append(profesor_id)
+            query = f'''
+                UPDATE Cursos 
+                SET {', '.join(update_fields)}
+                WHERE ID_Curso = %s AND ID_Profesor = %s
+            '''
+            cursor.execute(query, params)
+            conn.commit()
+            
+            return jsonify({'message': 'Curso actualizado exitosamente'})
+        else:
+            return jsonify({'error': 'No se proporcionaron campos para actualizar'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para obtener estudiantes de un curso
+@app.route('/api/profesor/<int:profesor_id>/cursos/<int:curso_id>/estudiantes', methods=['GET'])
+def get_estudiantes_curso_profesor(profesor_id, curso_id):
+    """Obtiene todos los estudiantes matriculados en un curso del profesor"""
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT e.ID_Estudiante, e.Nombre, e.Correo_electronico, e.Semestre,
+                   m.ID_Matricula, m.Estado, m.Progreso_total, m.Fecha_matricula,
+                   COUNT(pl.ID_Progreso) as lecciones_completadas,
+                   COUNT(re.ID_Resultado) as evaluaciones_realizadas,
+                   AVG(re.Puntaje) as promedio_evaluaciones
+            FROM Matriculas m
+            JOIN Estudiantes e ON m.ID_Estudiante = e.ID_Estudiante
+            LEFT JOIN Progreso_Lecciones pl ON e.ID_Estudiante = pl.ID_Estudiante AND pl.Completado = 1
+            LEFT JOIN Resultados_Evaluaciones re ON e.ID_Estudiante = re.ID_Estudiante
+            WHERE m.ID_Curso = %s
+            GROUP BY e.ID_Estudiante, m.ID_Matricula
+            ORDER BY m.Fecha_matricula DESC
+        ''', (curso_id,))
+        estudiantes = cursor.fetchall()
+        
+        return jsonify(estudiantes)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para obtener evaluaciones de un curso
+@app.route('/api/profesor/<int:profesor_id>/cursos/<int:curso_id>/evaluaciones', methods=['GET'])
+def get_evaluaciones_curso_profesor(profesor_id, curso_id):
+    """Obtiene todas las evaluaciones de un curso del profesor"""
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT e.*, 
+                   COUNT(re.ID_Resultado) as total_intentos,
+                   AVG(re.Puntaje) as promedio_puntaje,
+                   COUNT(CASE WHEN re.Aprobado = 1 THEN 1 END) as aprobados,
+                   COUNT(CASE WHEN re.Aprobado = 0 THEN 1 END) as reprobados
+            FROM Evaluaciones e
+            LEFT JOIN Resultados_Evaluaciones re ON e.ID_Evaluacion = re.ID_Evaluacion
+            WHERE (e.ID_Leccion IN (
+                SELECT l.ID_Leccion 
+                FROM Lecciones l 
+                JOIN Modulos m ON l.ID_Modulo = m.ID_Modulo 
+                WHERE m.ID_Curso = %s
+            ) OR e.ID_Modulo IN (
+                SELECT m.ID_Modulo 
+                FROM Modulos m 
+                WHERE m.ID_Curso = %s
+            ))
+            GROUP BY e.ID_Evaluacion
+            ORDER BY e.ID_Evaluacion
+        ''', (curso_id, curso_id))
+        evaluaciones = cursor.fetchall()
+        
+        return jsonify(evaluaciones)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para crear una nueva evaluación
+@app.route('/api/profesor/<int:profesor_id>/evaluaciones', methods=['POST'])
+def crear_evaluacion_profesor(profesor_id):
+    """Crea una nueva evaluación"""
+    data = request.json
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion', '')
+    puntaje_aprobacion = data.get('puntaje_aprobacion', 70.0)
+    max_intentos = data.get('max_intentos', 3)
+    id_leccion = data.get('id_leccion')
+    id_modulo = data.get('id_modulo')
+    
+    if not nombre:
+        return jsonify({'error': 'El nombre de la evaluación es obligatorio'}), 400
+    
+    if not id_leccion and not id_modulo:
+        return jsonify({'error': 'Debe especificar una lección o módulo'}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO Evaluaciones (Nombre, Descripcion, Puntaje_aprobacion, Max_intentos, ID_Leccion, ID_Modulo)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        ''', (nombre, descripcion, puntaje_aprobacion, max_intentos, id_leccion, id_modulo))
+        conn.commit()
+        
+        evaluacion_id = cursor.lastrowid
+        return jsonify({
+            'message': 'Evaluación creada exitosamente',
+            'evaluacion_id': evaluacion_id,
+            'nombre': nombre
+        }), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para obtener resultados de evaluaciones
+@app.route('/api/profesor/<int:profesor_id>/evaluaciones/<int:evaluacion_id>/resultados', methods=['GET'])
+def get_resultados_evaluacion_profesor(profesor_id, evaluacion_id):
+    """Obtiene todos los resultados de una evaluación"""
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT re.*, e.Nombre as Nombre_Estudiante, e.Correo_electronico
+            FROM Resultados_Evaluaciones re
+            JOIN Estudiantes e ON re.ID_Estudiante = e.ID_Estudiante
+            WHERE re.ID_Evaluacion = %s
+            ORDER BY re.Fecha_intento DESC
+        ''', (evaluacion_id,))
+        resultados = cursor.fetchall()
+        
+        return jsonify(resultados)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para obtener estadísticas del profesor
+@app.route('/api/profesor/<int:profesor_id>/estadisticas', methods=['GET'])
+def get_estadisticas_profesor(profesor_id):
+    """Obtiene estadísticas generales del profesor"""
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Estadísticas de cursos
+        cursor.execute('''
+            SELECT COUNT(*) as total_cursos,
+                   COUNT(CASE WHEN Estado = 'activo' THEN 1 END) as cursos_activos,
+                   COUNT(CASE WHEN Estado = 'inactivo' THEN 1 END) as cursos_inactivos
+            FROM Cursos 
+            WHERE ID_Profesor = %s
+        ''', (profesor_id,))
+        stats_cursos = cursor.fetchone()
+        
+        # Estadísticas de estudiantes
+        cursor.execute('''
+            SELECT COUNT(DISTINCT m.ID_Estudiante) as total_estudiantes,
+                   COUNT(DISTINCT m.ID_Curso) as cursos_con_estudiantes,
+                   AVG(m.Progreso_total) as promedio_progreso
+            FROM Matriculas m
+            JOIN Cursos c ON m.ID_Curso = c.ID_Curso
+            WHERE c.ID_Profesor = %s
+        ''', (profesor_id,))
+        stats_estudiantes = cursor.fetchone()
+        
+        # Estadísticas de evaluaciones
+        cursor.execute('''
+            SELECT COUNT(*) as total_evaluaciones,
+                   AVG(re.Puntaje) as promedio_puntaje_general,
+                   COUNT(re.ID_Resultado) as total_intentos
+            FROM Evaluaciones e
+            LEFT JOIN Resultados_Evaluaciones re ON e.ID_Evaluacion = re.ID_Evaluacion
+            WHERE e.ID_Leccion IN (
+                SELECT l.ID_Leccion 
+                FROM Lecciones l 
+                JOIN Modulos m ON l.ID_Modulo = m.ID_Modulo 
+                JOIN Cursos c ON m.ID_Curso = c.ID_Curso
+                WHERE c.ID_Profesor = %s
+            ) OR e.ID_Modulo IN (
+                SELECT m.ID_Modulo 
+                FROM Modulos m 
+                JOIN Cursos c ON m.ID_Curso = c.ID_Curso
+                WHERE c.ID_Profesor = %s
+            )
+        ''', (profesor_id, profesor_id))
+        stats_evaluaciones = cursor.fetchone()
+        
+        estadisticas = {
+            'cursos': stats_cursos,
+            'estudiantes': stats_estudiantes,
+            'evaluaciones': stats_evaluaciones
+        }
+        
+        return jsonify(estadisticas)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para obtener progreso detallado de un estudiante
+@app.route('/api/profesor/<int:profesor_id>/estudiantes/<int:estudiante_id>/progreso', methods=['GET'])
+def get_progreso_estudiante_profesor(profesor_id, estudiante_id):
+    """Obtiene el progreso detallado de un estudiante en los cursos del profesor"""
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT c.ID_Curso, c.Nombre as Nombre_Curso, m.ID_Modulo, m.Nombre as Nombre_Modulo,
+                   l.ID_Leccion, l.Nombre as Nombre_Leccion,
+                   pl.Completado, pl.Tiempo_dedicado, pl.Fecha_ultimo_acceso,
+                   re.Puntaje, re.Aprobado, re.Fecha_intento
+            FROM Cursos c
+            JOIN Modulos m ON c.ID_Curso = m.ID_Curso
+            JOIN Lecciones l ON m.ID_Modulo = l.ID_Modulo
+            LEFT JOIN Progreso_Lecciones pl ON l.ID_Leccion = pl.ID_Leccion AND pl.ID_Estudiante = %s
+            LEFT JOIN Evaluaciones ev ON (l.ID_Leccion = ev.ID_Leccion OR m.ID_Modulo = ev.ID_Modulo)
+            LEFT JOIN Resultados_Evaluaciones re ON ev.ID_Evaluacion = re.ID_Evaluacion AND re.ID_Estudiante = %s
+            WHERE c.ID_Profesor = %s
+            ORDER BY c.ID_Curso, m.Orden, l.Orden
+        ''', (estudiante_id, estudiante_id, profesor_id))
+        progreso = cursor.fetchall()
+        
+        return jsonify(progreso)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
 
 @app.route('/')
 def home():
