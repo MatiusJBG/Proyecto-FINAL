@@ -227,9 +227,9 @@ const MaterialManager = () => {
             'imagen': '🖼️'
         };
         return iconos[tipo] || '📁';
-    };
+  };
 
-    return (
+  return (
         <div className="material-manager">
             <h2>Gestión de Materiales</h2>
             
@@ -317,7 +317,7 @@ const MaterialManager = () => {
                                     <option value="imagen">Imagen</option>
                                 </select>
                             </div>
-                        </div>
+      </div>
 
                         <div className="form-row">
                             <div className="form-group">
@@ -409,7 +409,7 @@ const MaterialManager = () => {
                                             >
                                                 Editar
                                             </button>
-                                            <button 
+            <button
                                                 onClick={() => eliminarMaterial(material.id)}
                                                 className="btn-delete"
                                             >
@@ -424,9 +424,9 @@ const MaterialManager = () => {
                         <p className="select-leccion">Seleccione una lección para ver sus materiales</p>
                     )}
                 </div>
-            </div>
-        </div>
-    );
+          </div>
+    </div>
+  );
 };
 
 export default MaterialManager;

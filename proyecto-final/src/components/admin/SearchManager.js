@@ -30,8 +30,8 @@ const SearchManager = () => {
         e.preventDefault();
         if (!searchTerm.trim()) {
             setMessage('Ingrese un término de búsqueda');
-            return;
-        }
+      return;
+    }
 
         setLoading(true);
         setMessage('');
@@ -220,9 +220,9 @@ const SearchManager = () => {
                 </div>
             </div>
         );
-    };
+  };
 
-    return (
+  return (
         <div className="search-manager">
             <h2>Búsqueda en Estructura Jerárquica</h2>
             
@@ -252,8 +252,8 @@ const SearchManager = () => {
                         
                         <div className="search-group">
                             <label>Término de búsqueda:</label>
-                            <input
-                                type="text"
+      <input
+        type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Buscar cursos, módulos, lecciones, recursos..."
@@ -299,8 +299,8 @@ const SearchManager = () => {
                     </div>
                 )}
             </div>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default SearchManager;

@@ -145,16 +145,16 @@ const DecisionTreeManager = () => {
             'general': '#6b7280'
         };
         return colores[tipo] || '#6b7280';
-    };
+  };
 
-    return (
+  return (
         <div className="decision-tree-manager">
             <h2>Árbol de Decisión - Sistema de Recomendaciones</h2>
             
             {message && (
                 <div className={`message ${message.includes('Error') ? 'error' : 'info'}`}>
                     {message}
-                </div>
+      </div>
             )}
 
             <div className="content-grid">
@@ -273,7 +273,7 @@ const DecisionTreeManager = () => {
                     <div className="info-card">
                         <h4>🎯 Propósito</h4>
                         <p>El árbol de decisión analiza el rendimiento del estudiante y genera recomendaciones personalizadas basadas en múltiples criterios.</p>
-                    </div>
+      </div>
                     <div className="info-card">
                         <h4>📊 Criterios Evaluados</h4>
                         <ul>
@@ -282,7 +282,7 @@ const DecisionTreeManager = () => {
                             <li>Tasa de aprobación de evaluaciones</li>
                             <li>Tiempo dedicado al estudio</li>
                             <li>Número de lecciones completadas</li>
-                        </ul>
+      </ul>
                     </div>
                     <div className="info-card">
                         <h4>🎨 Tipos de Recomendación</h4>
@@ -314,9 +314,9 @@ const DecisionTreeManager = () => {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    );
+          </div>
+    </div>
+  );
 };
 
 export default DecisionTreeManager;

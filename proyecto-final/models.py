@@ -300,9 +300,12 @@ class ArbolDecision:
                 'evaluaciones_aprobadas/total_evaluaciones < 0.8': 
                     (datos.get('evaluaciones_aprobadas', 0) / max(datos.get('total_evaluaciones', 1), 1)) < 0.8,
                 'tiempo_promedio > 60': datos.get('tiempo_promedio', 0) > 60,
-                'lecciones_completadas < 5': datos.get('lecciones_completadas', 0) < 5
+                'lecciones_completadas < 5': datos.get('lecciones_completadas', 0) < 5,
+                'recursos_revisados/total_recursos < 1': (datos.get('recursos_revisados', 0) / max(datos.get('total_recursos', 1), 1)) < 1,
+                'intentos_evaluacion > 2': datos.get('intentos_evaluacion', 0) > 2,
+                'dias_desde_ultimo_acceso > 7': datos.get('dias_desde_ultimo_acceso', 0) > 7,
+                'lecciones_obligatorias_completadas/total_lecciones_obligatorias < 1': (datos.get('lecciones_obligatorias_completadas', 0) / max(datos.get('total_lecciones_obligatorias', 1), 1)) < 1
             }
-            
             return mapeo.get(condicion, False)
         except:
             return False
@@ -424,36 +427,48 @@ class GestorContenido:
         return self.arbol_decision.evaluar_estudiante(datos_estudiante)
     
     def _inicializar_arbol_decision(self) -> None:
-        """Inicializa el árbol de decisión con reglas predefinidas"""
+        """Inicializa el árbol de decisión con reglas predefinidas y extendidas"""
         # Nodo raíz: evaluar puntaje promedio
         nodo_raiz = NodoDecision(1, 'promedio_puntajes < 70', '', 'evaluacion', 'alta')
-        
         # Nodo izquierdo: puntaje bajo -> recomendar refuerzo
         nodo_refuerzo = NodoDecision(2, '', 'Repasar módulos anteriores y practicar más ejercicios', 'refuerzo', 'alta')
-        
         # Nodo derecho: evaluar progreso
         nodo_progreso = NodoDecision(3, 'promedio_progreso < 50', '', 'progreso', 'media')
-        
         # Nodo izquierdo del progreso: progreso bajo -> más tiempo
         nodo_tiempo = NodoDecision(4, '', 'Dedicar más tiempo al estudio y completar lecciones pendientes', 'tiempo', 'media')
-        
-        # Nodo derecho del progreso: evaluar aprobación
+        # Nodo derecho del progreso: evaluar recursos revisados
+        nodo_recursos = NodoDecision(8, 'recursos_revisados/total_recursos < 1', '', 'recursos', 'media')
+        nodo_recursos_hoja = NodoDecision(9, '', 'Revisa todos los recursos antes de avanzar', 'recursos', 'alta')
+        # Nodo derecho de recursos: evaluar intentos de evaluación
+        nodo_intentos = NodoDecision(10, 'intentos_evaluacion > 2', '', 'evaluacion', 'media')
+        nodo_tutoria = NodoDecision(11, '', 'Solicita tutoría para resolver tus dudas', 'tutoria', 'alta')
+        # Nodo derecho de intentos: evaluar días desde último acceso
+        nodo_dias = NodoDecision(12, 'dias_desde_ultimo_acceso > 7', '', 'progreso', 'media')
+        nodo_reactivar = NodoDecision(13, '', '¡Vuelve a estudiar! No pierdas el ritmo.', 'motivacion', 'alta')
+        # Nodo derecho de días: evaluar lecciones obligatorias completadas
+        nodo_lecciones_obl = NodoDecision(14, 'lecciones_obligatorias_completadas/total_lecciones_obligatorias < 1', '', 'progreso', 'media')
+        nodo_completa_obl = NodoDecision(15, '', 'Completa todas las lecciones obligatorias para avanzar.', 'progreso', 'alta')
+        # Nodo derecho de lecciones obligatorias: evaluar aprobación
         nodo_aprobacion = NodoDecision(5, 'evaluaciones_aprobadas/total_evaluaciones < 0.8', '', 'evaluacion', 'media')
-        
         # Nodo izquierdo de aprobación: aprobación baja -> revisión
         nodo_revision = NodoDecision(6, '', 'Revisar conceptos clave antes de las evaluaciones', 'revision', 'media')
-        
         # Nodo derecho de aprobación: todo bien -> continuar
         nodo_continuar = NodoDecision(7, '', '¡Excelente progreso! Continúa con el siguiente módulo', 'motivacion', 'baja')
-        
-        # Construir el árbol
+        # Conectar árbol extendido
         nodo_raiz.izquierda = nodo_refuerzo
         nodo_raiz.derecha = nodo_progreso
         nodo_progreso.izquierda = nodo_tiempo
-        nodo_progreso.derecha = nodo_aprobacion
+        nodo_progreso.derecha = nodo_recursos
+        nodo_recursos.izquierda = nodo_recursos_hoja
+        nodo_recursos.derecha = nodo_intentos
+        nodo_intentos.izquierda = nodo_tutoria
+        nodo_intentos.derecha = nodo_dias
+        nodo_dias.izquierda = nodo_reactivar
+        nodo_dias.derecha = nodo_lecciones_obl
+        nodo_lecciones_obl.izquierda = nodo_completa_obl
+        nodo_lecciones_obl.derecha = nodo_aprobacion
         nodo_aprobacion.izquierda = nodo_revision
         nodo_aprobacion.derecha = nodo_continuar
-        
         self.arbol_decision.raiz = nodo_raiz
 
 class GestorMateriales:
