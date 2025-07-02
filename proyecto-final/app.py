@@ -457,6 +457,11 @@ def crear_leccion(modulo_id):
     try:
         cursor = conn.cursor()
         
+        # Verificar que el módulo existe
+        cursor.execute('SELECT ID_Modulo FROM Modulos WHERE ID_Modulo = %s', (modulo_id,))
+        if not cursor.fetchone():
+            return jsonify({'error': 'El módulo especificado no existe'}), 404
+        
         # Obtener el siguiente orden
         cursor.execute('''
             SELECT COALESCE(MAX(Orden), 0) + 1 as siguiente_orden
@@ -465,11 +470,14 @@ def crear_leccion(modulo_id):
         ''', (modulo_id,))
         siguiente_orden = cursor.fetchone()[0]
         
+        # Convertir es_obligatoria a 1 o 0 para MySQL
+        es_obligatoria_int = 1 if es_obligatoria else 0
+        
         # Insertar la lección
         cursor.execute('''
             INSERT INTO Lecciones (ID_Modulo, Nombre, Descripcion, Contenido, Orden, Duracion_estimada, Es_obligatoria)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-        ''', (modulo_id, nombre, descripcion, contenido, siguiente_orden, duracion_estimada, es_obligatoria))
+        ''', (modulo_id, nombre, descripcion, contenido, siguiente_orden, duracion_estimada, es_obligatoria_int))
         
         leccion_id = cursor.lastrowid
         conn.commit()
@@ -488,13 +496,14 @@ def crear_leccion(modulo_id):
                 'Contenido': leccion_creada[4],
                 'Orden': leccion_creada[5],
                 'Duracion_estimada': leccion_creada[6],
-                'Es_obligatoria': leccion_creada[7]
+                'Es_obligatoria': bool(leccion_creada[7])
             }
         }), 201
         
     except Exception as e:
         conn.rollback()
-        return jsonify({'error': str(e)}), 500
+        print(f"Error creando lección: {e}")
+        return jsonify({'error': f'Error interno del servidor: {str(e)}'}), 500
     finally:
         conn.close()
 
@@ -515,6 +524,11 @@ def crear_evaluacion_leccion(leccion_id):
         return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
     try:
         cursor = conn.cursor()
+        
+        # Verificar que la lección existe
+        cursor.execute('SELECT ID_Leccion FROM Lecciones WHERE ID_Leccion = %s', (leccion_id,))
+        if not cursor.fetchone():
+            return jsonify({'error': 'La lección especificada no existe'}), 404
         
         # Insertar la evaluación
         cursor.execute('''
@@ -537,14 +551,15 @@ def crear_evaluacion_leccion(leccion_id):
                 'ID_Modulo': evaluacion_creada[2],
                 'Nombre': evaluacion_creada[3],
                 'Descripcion': evaluacion_creada[4],
-                'Puntaje_aprobacion': evaluacion_creada[5],
+                'Puntaje_aprobacion': float(evaluacion_creada[5]),
                 'Max_intentos': evaluacion_creada[6]
             }
         }), 201
         
     except Exception as e:
         conn.rollback()
-        return jsonify({'error': str(e)}), 500
+        print(f"Error creando evaluación: {e}")
+        return jsonify({'error': f'Error interno del servidor: {str(e)}'}), 500
     finally:
         conn.close()
 
