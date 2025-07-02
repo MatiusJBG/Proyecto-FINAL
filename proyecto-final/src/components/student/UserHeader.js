@@ -3,7 +3,8 @@ import { FiUser } from 'react-icons/fi';
 import './UserHeader.css';
 
 export default function UserHeader({ userData }) {
-  const userName = userData?.name || 'Estudiante';
+  // Soportar distintos nombres de campo (Nombre, name, nombre)
+  const userName = userData?.Nombre || userData?.name || userData?.nombre || 'Estudiante';
   
   return (
     <header className="dashboard-header">

@@ -26,14 +26,11 @@ def cargar_datos_gestor():
     conn = get_connection()
     if not conn:
         return
-    
     try:
         cursor = conn.cursor(dictionary=True)
-        
         # Cargar cursos
         cursor.execute('SELECT * FROM Cursos WHERE Estado = "activo"')
         cursos_data = cursor.fetchall()
-        
         for curso_data in cursos_data:
             curso = Curso(
                 id=curso_data['ID_Curso'],
@@ -43,11 +40,9 @@ def cargar_datos_gestor():
                 id_profesor=curso_data.get('ID_Profesor')
             )
             gestor_contenido.agregar_curso(curso)
-            
             # Cargar módulos del curso
             cursor.execute('SELECT * FROM Modulos WHERE ID_Curso = %s ORDER BY Orden', (curso.id,))
             modulos_data = cursor.fetchall()
-            
             for modulo_data in modulos_data:
                 modulo = Modulo(
                     id=modulo_data['ID_Modulo'],
@@ -57,11 +52,9 @@ def cargar_datos_gestor():
                     id_curso=modulo_data['ID_Curso']
                 )
                 curso.agregar_modulo(modulo)
-                
                 # Cargar lecciones del módulo
                 cursor.execute('SELECT * FROM Lecciones WHERE ID_Modulo = %s ORDER BY Orden', (modulo.id,))
                 lecciones_data = cursor.fetchall()
-                
                 for leccion_data in lecciones_data:
                     leccion = Leccion(
                         id=leccion_data['ID_Leccion'],
@@ -72,11 +65,9 @@ def cargar_datos_gestor():
                         es_obligatoria=leccion_data.get('Es_obligatoria', True)
                     )
                     modulo.agregar_leccion(leccion)
-                    
                     # Cargar recursos de la lección
                     cursor.execute('SELECT * FROM Recursos WHERE ID_Leccion = %s ORDER BY Orden', (leccion.id,))
                     recursos_data = cursor.fetchall()
-                    
                     for recurso_data in recursos_data:
                         recurso = Recurso(
                             id=recurso_data['ID_Recurso'],
@@ -87,9 +78,7 @@ def cargar_datos_gestor():
                             duracion=recurso_data.get('Duracion')
                         )
                         leccion.agregar_recurso(recurso)
-        
         print(f"✅ Cargados {len(cursos_data)} cursos con su estructura jerárquica")
-        
     except Exception as e:
         print(f"❌ Error cargando datos al gestor: {e}")
     finally:
@@ -244,10 +233,8 @@ def matricular_estudiante():
     data = request.json
     estudiante_id = data.get('estudiante_id')
     curso_id = data.get('curso_id')
-    
     if not estudiante_id or not curso_id:
         return jsonify({'error': 'ID de estudiante y curso son obligatorios'}), 400
-    
     conn = get_connection()
     if not conn:
         return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
@@ -259,6 +246,66 @@ def matricular_estudiante():
         ''', (estudiante_id, curso_id))
         conn.commit()
         return jsonify({'message': 'Matrícula exitosa'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+
+# Endpoint para crear un curso (POST)
+@app.route('/api/cursos', methods=['POST'])
+def crear_curso():
+    data = request.json
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion', '')
+    duracion_estimada = data.get('duracion_estimada', 0)
+    id_profesor = data.get('id_profesor')
+    if not nombre or not id_profesor:
+        return jsonify({'error': 'Faltan datos obligatorios (nombre, id_profesor)'}), 400
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO Cursos (Nombre, Descripcion, Duracion_estimada, ID_Profesor, Estado)
+            VALUES (%s, %s, %s, %s, 'activo')
+        ''', (nombre, descripcion, duracion_estimada, id_profesor))
+        conn.commit()
+        # Obtener el ID del curso recién creado
+        cursor.execute('SELECT LAST_INSERT_ID()')
+        result = cursor.fetchone()
+        curso_id = result[0] if result else None
+        # Crear el objeto Curso y agregarlo al gestor en memoria (POO)
+        if curso_id:
+            from models import Curso
+            curso = Curso(
+                id=curso_id,
+                nombre=nombre,
+                descripcion=descripcion,
+                duracion_estimada=duracion_estimada,
+                id_profesor=id_profesor
+            )
+            gestor_contenido.agregar_curso(curso)
+        return jsonify({'message': 'Curso creado correctamente', 'curso_id': curso_id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para eliminar un curso
+@app.route('/api/cursos/<int:curso_id>', methods=['DELETE'])
+def eliminar_curso(curso_id):
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM Cursos WHERE ID_Curso = %s', (curso_id,))
+        conn.commit()
+        # Eliminar también en memoria (POO)
+        gestor_contenido.eliminar_curso(curso_id)
+        return jsonify({'message': 'Curso eliminado correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
@@ -624,10 +671,8 @@ def generar_recomendacion(estudiante_id):
     conn = get_connection()
     if not conn:
         return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
-    
     try:
         cursor = conn.cursor(dictionary=True)
-        
         # Obtener datos del estudiante para el árbol de decisión
         cursor.execute('''
             SELECT 
@@ -640,22 +685,19 @@ def generar_recomendacion(estudiante_id):
             LEFT JOIN Matriculas m ON e.ID_Estudiante = m.ID_Estudiante
             WHERE e.ID_Estudiante = %s
         ''', (estudiante_id,))
-        
         datos_estudiante = cursor.fetchone()
-        
+        if not datos_estudiante or all(v is None for v in datos_estudiante.values()):
+            return jsonify({'error': 'No hay datos suficientes para generar recomendación'}), 400
         # Lógica simplificada del árbol de decisión
         recomendacion = generar_arbol_decision(datos_estudiante)
-        
         # Registrar la recomendación
         cursor.execute('''
             INSERT INTO Historial_Recomendaciones 
             (ID_Estudiante, ID_Regla, Accion_tomada, Fue_seguida)
             VALUES (%s, %s, %s, NULL)
         ''', (estudiante_id, recomendacion['regla_id'], recomendacion['accion']))
-        
         conn.commit()
         return jsonify(recomendacion)
-        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

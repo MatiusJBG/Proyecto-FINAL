@@ -2,12 +2,14 @@ import React from 'react';
 import { FiUser, FiBook, FiBell, FiLogOut } from 'react-icons/fi';
 import './Sidebar.css';
 
-export default function Sidebar({ onLogout }) {
+export default function Sidebar({ onLogout, userData }) {
+  // Soportar distintos nombres de campo (Nombre, name, nombre)
+  const userName = userData?.Nombre || userData?.name || userData?.nombre || 'Estudiante';
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
         <FiUser size={32} />
-        <span>Estudiante</span>
+        <span>{userName}</span>
       </div>
       <nav>
         <ul>

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './AdminPanel.css';
+import LogoutIcon from './LogoutIcon';
 import ContentManager from './admin/ContentManager';
 import MaterialManager from './admin/MaterialManager';
 import SearchManager from './admin/SearchManager';
@@ -20,6 +21,33 @@ const initialData = {
 
 function AdminPanel() {
   const [data, setData] = useState(initialData);
+
+  // Cargar cursos desde el backend al iniciar
+  useEffect(() => {
+    const fetchCursos = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/cursos');
+        const cursos = await res.json();
+        if (Array.isArray(cursos)) {
+          // Mapea los campos de la base de datos a los que espera el frontend
+          const cursosConModulos = cursos.map(c => ({
+            id: c.ID_Curso || c.id,
+            nombre: c.Nombre || c.nombre,
+            descripcion: c.Descripcion || c.descripcion || '',
+            estado: c.Estado || c.estado,
+            duracion: c.Duracion_estimada || c.duracion_estimada,
+            idProfesor: c.ID_Profesor || c.id_profesor,
+            modulos: [],
+            // Puedes agregar más campos si los necesitas
+          }));
+          setData(d => ({ ...d, cursos: cursosConModulos }));
+        }
+      } catch (e) {
+        // Puedes mostrar un error si lo deseas
+      }
+    };
+    fetchCursos();
+  }, []);
   const [selectedCurso, setSelectedCurso] = useState(null);
   const [selectedModulo, setSelectedModulo] = useState(null);
   const [selectedLeccion, setSelectedLeccion] = useState(null);
@@ -28,11 +56,40 @@ function AdminPanel() {
   const [activeTab, setActiveTab] = useState('contenido');
 
   // CRUD Cursos
-  const agregarCurso = (nombre) => {
-    setData({ ...data, cursos: [...data.cursos, { id: Date.now(), nombre, modulos: [] }] });
+  // Recargar cursos desde el backend después de agregar uno nuevo
+  const recargarCursos = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/cursos');
+      const cursos = await res.json();
+      if (Array.isArray(cursos)) {
+        const cursosConModulos = cursos.map(c => ({
+          id: c.ID_Curso || c.id,
+          nombre: c.Nombre || c.nombre,
+          descripcion: c.Descripcion || c.descripcion || '',
+          estado: c.Estado || c.estado,
+          duracion: c.Duracion_estimada || c.duracion_estimada,
+          idProfesor: c.ID_Profesor || c.id_profesor,
+          modulos: [],
+        }));
+        setData(d => ({ ...d, cursos: cursosConModulos }));
+      }
+    } catch (e) {}
   };
-  const eliminarCurso = (id) => {
-    setData({ ...data, cursos: data.cursos.filter(c => c.id !== id) });
+
+  // Esta función se pasa a CourseForm para que recargue los cursos reales
+  const agregarCurso = () => {
+    recargarCursos();
+  };
+  const eliminarCurso = async (id) => {
+    // Buscar el curso real para obtener el ID_Curso de la base de datos
+    const curso = data.cursos.find(c => c.id === id || c.ID_Curso === id);
+    const realId = curso?.ID_Curso || curso?.id || id;
+    try {
+      await fetch(`http://localhost:5000/api/cursos/${realId}`, { method: 'DELETE' });
+      recargarCursos();
+    } catch (e) {
+      // Puedes mostrar un error si lo deseas
+    }
   };
 
   // CRUD Módulos
@@ -150,15 +207,15 @@ function AdminPanel() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="admin-title">Panel de Administración</h2>
           <button
-            className="admin-btn"
-            style={{ background: '#e94560', color: '#fff', padding: '8px 18px', fontWeight: 'bold' }}
+            className="admin-btn logout-btn"
             onClick={() => {
               localStorage.clear();
               sessionStorage.clear();
               window.location.href = '/login';
             }}
           >
-            Cerrar sesión
+            <LogoutIcon style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            Cerrar Sesión
           </button>
         </div>
         <AdminTabs active={activeTab} setActive={setActiveTab} />
