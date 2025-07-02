@@ -5,8 +5,29 @@
 .course-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 2rem;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.stats-summary {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+  background: #f8f9fa;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
 }
 
 .course-header h2 {
@@ -249,4 +270,58 @@
   .course-actions-bottom {
     flex-direction: column;
   }
+}
+
+/* Nuevos estilos para elementos actualizados */
+.course-description {
+  margin: 1rem 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.course-description p {
+  margin: 0;
+}
+
+.course-stats {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: #6c757d;
+  flex-wrap: wrap;
+}
+
+.course-status {
+  margin: 1rem 0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-badge.activo {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.inactivo {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  margin: 0 0 0.5rem 0;
+  color: #1a202c;
 } 

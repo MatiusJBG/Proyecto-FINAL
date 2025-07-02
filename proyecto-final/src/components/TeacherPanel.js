@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiUser, FiBook, FiUsers, FiFileText, FiBarChart2, FiLogOut, FiBell, FiSettings } from 'react-icons/fi';
 import './TeacherPanel.css';
 import TeacherTabs from './teacher/TeacherTabs';
@@ -7,38 +7,99 @@ import StudentManager from './teacher/StudentManager';
 import EvaluationManager from './teacher/EvaluationManager';
 import GradeManager from './teacher/GradeManager';
 import AnalyticsPanel from './teacher/AnalyticsPanel';
-
-// Datos simulados para el profesor
-const mockTeacherData = {
-  id: 1,
-  name: 'Dr. María González',
-  email: 'maria.gonzalez@universidad.edu',
-  department: 'Matemáticas',
-  courses: [
-    {
-      id: 1,
-      name: 'Matemáticas Avanzadas',
-      students: 25,
-      progress: 75,
-      active: true
-    },
-    {
-      id: 2,
-      name: 'Cálculo Diferencial',
-      students: 30,
-      progress: 60,
-      active: true
-    }
-  ]
-};
+import teacherApiService from '../services/teacherApi';
 
 function TeacherPanel({ onLogout, userData }) {
   const [activeTab, setActiveTab] = useState('cursos');
-  const [teacherData] = useState(mockTeacherData);
+  const [teacherData, setTeacherData] = useState(null);
+  const [teacherStats, setTeacherStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [notifications] = useState([
     { id: 1, message: 'Nueva evaluación pendiente de revisión', type: 'evaluation' },
     { id: 2, message: 'Reunión de departamento mañana a las 10:00', type: 'meeting' }
   ]);
+
+  // Cargar datos del profesor al montar el componente
+  useEffect(() => {
+    const loadTeacherData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Obtener ID del profesor desde userData o usar un ID por defecto
+        const teacherId = userData?.id || 1;
+        
+        // Cargar información del profesor
+        const teacherInfo = await teacherApiService.getTeacherInfo(teacherId);
+        
+        // Cargar estadísticas del profesor
+        const stats = await teacherApiService.getTeacherStats(teacherId);
+        
+        // Formatear datos del profesor
+        const formattedTeacherData = {
+          id: teacherInfo.ID_Profesor,
+          name: teacherInfo.Nombre,
+          email: teacherInfo.Correo_electronico,
+          department: teacherInfo.Especialidad,
+          registrationDate: teacherInfo.Fecha_registro,
+        };
+        
+        setTeacherData(formattedTeacherData);
+        setTeacherStats(teacherApiService.formatTeacherStats(stats));
+        
+      } catch (err) {
+        console.error('Error cargando datos del profesor:', err);
+        setError('Error al cargar los datos del profesor. Por favor, intenta de nuevo.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTeacherData();
+  }, [userData]);
+
+  // Mostrar estado de carga
+  if (loading) {
+    return (
+      <div className="teacher-panel-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Cargando datos del profesor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar error si ocurrió
+  if (error) {
+    return (
+      <div className="teacher-panel-container">
+        <div className="error-container">
+          <div className="error-icon">⚠️</div>
+          <h3>Error</h3>
+          <p>{error}</p>
+          <button 
+            className="btn-primary"
+            onClick={() => window.location.reload()}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar panel principal si los datos están cargados
+  if (!teacherData) {
+    return (
+      <div className="teacher-panel-container">
+        <div className="error-container">
+          <p>No se pudieron cargar los datos del profesor.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="teacher-panel-container">
@@ -83,19 +144,34 @@ function TeacherPanel({ onLogout, userData }) {
 
         <div className="teacher-content">
           {activeTab === 'cursos' && (
-            <CourseManager teacherData={teacherData} />
+            <CourseManager 
+              teacherData={teacherData} 
+              teacherStats={teacherStats}
+            />
           )}
           {activeTab === 'estudiantes' && (
-            <StudentManager teacherData={teacherData} />
+            <StudentManager 
+              teacherData={teacherData}
+              teacherStats={teacherStats}
+            />
           )}
           {activeTab === 'evaluaciones' && (
-            <EvaluationManager teacherData={teacherData} />
+            <EvaluationManager 
+              teacherData={teacherData}
+              teacherStats={teacherStats}
+            />
           )}
           {activeTab === 'calificaciones' && (
-            <GradeManager teacherData={teacherData} />
+            <GradeManager 
+              teacherData={teacherData}
+              teacherStats={teacherStats}
+            />
           )}
           {activeTab === 'analiticas' && (
-            <AnalyticsPanel teacherData={teacherData} />
+            <AnalyticsPanel 
+              teacherData={teacherData}
+              teacherStats={teacherStats}
+            />
           )}
         </div>
       </main>
