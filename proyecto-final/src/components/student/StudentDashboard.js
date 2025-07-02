@@ -24,6 +24,7 @@ export default function StudentDashboard({ onLogout, userData }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeSection, setActiveSection] = useState('cursos');
+  const [panelCursoAbierto, setPanelCursoAbierto] = useState(false);
 
   useEffect(() => {
     if (userData && userData.ID_Estudiante) {
@@ -196,11 +197,16 @@ export default function StudentDashboard({ onLogout, userData }) {
     }
   };
 
-  const cambiarCursoActual = async (curso) => {
-    setCursoActual(curso);
-    await cargarProgresoLecciones(curso.ID_Curso);
-    await cargarEvaluacionesPendientes(curso.ID_Curso);
-    await cargarResultadosEvaluaciones(curso.ID_Curso);
+  const handleCursoClick = (curso) => {
+    if (cursoActual && cursoActual.ID_Curso === curso.ID_Curso && panelCursoAbierto) {
+      setPanelCursoAbierto(false);
+    } else {
+      setCursoActual(curso);
+      setPanelCursoAbierto(true);
+      cargarProgresoLecciones(curso.ID_Curso);
+      cargarEvaluacionesPendientes(curso.ID_Curso);
+      cargarResultadosEvaluaciones(curso.ID_Curso);
+    }
   };
 
   if (loading) {
@@ -264,8 +270,8 @@ export default function StudentDashboard({ onLogout, userData }) {
               {cursosMatriculados.map(curso => (
                 <button
                   key={curso.ID_Curso}
-                  className={`course-item ${cursoActual?.ID_Curso === curso.ID_Curso ? 'active' : ''}`}
-                  onClick={() => cambiarCursoActual(curso)}
+                  className={`course-item ${cursoActual?.ID_Curso === curso.ID_Curso && panelCursoAbierto ? 'active' : ''}`}
+                  onClick={() => handleCursoClick(curso)}
                 >
                   <div className="course-info">
                     <h4>{curso.Nombre}</h4>
@@ -282,26 +288,29 @@ export default function StudentDashboard({ onLogout, userData }) {
             onEnrollmentComplete={cargarDatosEstudiante}
           />
         )}
-        {activeSection === 'cursos' && (
-          <>
-            <section className="dashboard-panels">
+        {activeSection === 'cursos' && panelCursoAbierto && cursoActual && (
+          <section className="curso-panel-expandido">
+            <div className="curso-panel-header">
+              <h3>{cursoActual.Nombre}</h3>
+              <button className="cerrar-panel" onClick={() => setPanelCursoAbierto(false)}>Cerrar</button>
+            </div>
+            <div className="dashboard-panels">
               <div className="panel panel-progress">
                 <CourseProgress 
                   progress={cursoActual?.Progreso_total || 0} 
                   estadisticas={estadisticas}
                 />
               </div>
-              {cursoActual && (
-                <CurrentCoursePanel 
-                  course={cursoMock} 
-                  progresoLecciones={progresoLecciones}
-                  onProgresoUpdate={actualizarProgresoLeccion}
-                />
-              )}
+              <CurrentCoursePanel 
+                course={cursoMock} 
+                progresoLecciones={progresoLecciones}
+                onProgresoUpdate={actualizarProgresoLeccion}
+              />
               <div className="panel panel-recommendation">
                 <RecommendationCard recommendation={recomendacion} />
               </div>
-            </section>
+            </div>
+            <CourseTreeView cursoId={cursoActual.ID_Curso} />
             <section className="dashboard-lists">
               <PendingEvaluations 
                 evaluations={evaluacionesMock}
@@ -309,11 +318,7 @@ export default function StudentDashboard({ onLogout, userData }) {
               />
               <NotificationPanel notifications={notificacionesMock} />
             </section>
-            {/* Estructura jerárquica del curso actual */}
-            {cursoActual && (
-              <CourseTreeView cursoId={cursoActual.ID_Curso} />
-            )}
-          </>
+          </section>
         )}
         {activeSection === 'notificaciones' && (
           <NotificationPanel notifications={notificacionesMock} />
