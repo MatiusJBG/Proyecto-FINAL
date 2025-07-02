@@ -4,7 +4,7 @@ import './TeacherPanel.css';
 import TeacherTabs from './teacher/TeacherTabs';
 import CourseManager from './teacher/CourseManager';
 import StudentManager from './teacher/StudentManager';
-import EvaluationManager from './teacher/EvaluationManager';
+
 import GradeManager from './teacher/GradeManager';
 import AnalyticsPanel from './teacher/AnalyticsPanel';
 import teacherApiService from '../services/teacherApi';
@@ -15,10 +15,6 @@ function TeacherPanel({ onLogout, userData }) {
   const [teacherStats, setTeacherStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notifications] = useState([
-    { id: 1, message: 'Nueva evaluación pendiente de revisión', type: 'evaluation' },
-    { id: 2, message: 'Reunión de departamento mañana a las 10:00', type: 'meeting' }
-  ]);
 
   // Cargar datos del profesor al montar el componente
   useEffect(() => {
@@ -132,10 +128,6 @@ function TeacherPanel({ onLogout, userData }) {
             <p>Bienvenido, {teacherData.name}</p>
           </div>
           <div className="header-right">
-            <div className="notifications">
-              <FiBell size={20} />
-              <span className="notification-badge">{notifications.length}</span>
-            </div>
             <button className="settings-btn">
               <FiSettings size={20} />
             </button>
@@ -155,12 +147,7 @@ function TeacherPanel({ onLogout, userData }) {
               teacherStats={teacherStats}
             />
           )}
-          {activeTab === 'evaluaciones' && (
-            <EvaluationManager 
-              teacherData={teacherData}
-              teacherStats={teacherStats}
-            />
-          )}
+
           {activeTab === 'calificaciones' && (
             <GradeManager 
               teacherData={teacherData}

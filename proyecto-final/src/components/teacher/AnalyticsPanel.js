@@ -1,8 +1,41 @@
-import React from 'react';
-import { FiTrendingUp, FiUsers, FiBook, FiBarChart2 } from 'react-icons/fi';
+import React, { useEffect, useState } from 'react';
+import { FiTrendingUp, FiUsers, FiBook, FiBarChart2, FiClock } from 'react-icons/fi';
+import teacherApiService from '../../services/teacherApi';
 import './AnalyticsPanel.css';
 
 function AnalyticsPanel({ teacherData }) {
+  const [interactionHistory, setInteractionHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [errorHistory, setErrorHistory] = useState(null);
+
+  useEffect(() => {
+    const fetchAllHistories = async () => {
+      try {
+        setLoadingHistory(true);
+        setErrorHistory(null);
+        // Obtener historial de todos los estudiantes
+        const allHistories = [];
+        for (const course of teacherData.courses) {
+          // Suponiendo que cada curso tiene un array de estudiantes
+          for (const student of course.studentsList || []) {
+            try {
+              const history = await teacherApiService.getStudentInteractionHistory(teacherData.id, student.id);
+              allHistories.push(...history.map(event => ({ ...event, studentName: student.name, courseName: course.name })));
+            } catch (e) { /* ignorar error individual */ }
+          }
+        }
+        // Ordenar por fecha descendente
+        allHistories.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        setInteractionHistory(allHistories);
+      } catch (err) {
+        setErrorHistory('No se pudo cargar el historial de interacción.');
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+    if (teacherData && teacherData.courses) fetchAllHistories();
+  }, [teacherData]);
+
   // Datos simulados para las analíticas
   const analyticsData = {
     totalStudents: 55,
@@ -144,6 +177,41 @@ function AnalyticsPanel({ teacherData }) {
             <p>Las calificaciones han mejorado un 12% este semestre.</p>
           </div>
         </div>
+      </div>
+
+      {/* Historial de interacción global */}
+      <div className="history-section">
+        <h3><FiClock /> Historial de Interacción Reciente</h3>
+        {loadingHistory ? (
+          <div className="loading-history">Cargando historial...</div>
+        ) : errorHistory ? (
+          <div className="error-history">{errorHistory}</div>
+        ) : interactionHistory.length === 0 ? (
+          <div className="empty-history">No hay interacciones recientes.</div>
+        ) : (
+          <table className="history-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Estudiante</th>
+                <th>Curso</th>
+                <th>Acción</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody>
+              {interactionHistory.slice(0, 20).map((event, idx) => (
+                <tr key={idx}>
+                  <td>{new Date(event.fecha).toLocaleString()}</td>
+                  <td>{event.studentName}</td>
+                  <td>{event.courseName}</td>
+                  <td>{event.accion}</td>
+                  <td>{event.detalle}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

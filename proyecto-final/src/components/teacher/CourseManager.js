@@ -2,18 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit, FiTrash2, FiUsers, FiTrendingUp, FiBook, FiClock } from 'react-icons/fi';
 import './CourseManager.css';
 import teacherApiService from '../../services/teacherApi';
+import CourseHierarchyManager from './CourseHierarchyManager';
+import CourseManagementPage from './CourseManagementPage';
 
 function CourseManager({ teacherData, teacherStats }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newCourse, setNewCourse] = useState({ 
-    nombre: '', 
-    descripcion: '', 
-    duracion_estimada: 0 
-  });
-  const [submitting, setSubmitting] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [showCourseDetails, setShowCourseDetails] = useState(false);
+  const [showCourseManagement, setShowCourseManagement] = useState(false);
 
   // Cargar cursos del profesor
   useEffect(() => {
@@ -41,55 +39,22 @@ function CourseManager({ teacherData, teacherStats }) {
     }
   }, [teacherData?.id]);
 
-  const handleAddCourse = async (e) => {
-    e.preventDefault();
-    if (newCourse.nombre.trim()) {
-      try {
-        setSubmitting(true);
-        
-        const courseData = {
-          nombre: newCourse.nombre,
-          descripcion: newCourse.descripcion,
-          duracion_estimada: parseInt(newCourse.duracion_estimada) || 0
-        };
-        
-        const result = await teacherApiService.createCourse(teacherData.id, courseData);
-        
-        // Recargar la lista de cursos
-        const coursesData = await teacherApiService.getTeacherCourses(teacherData.id);
-        const formattedCourses = coursesData.map(course => 
-          teacherApiService.formatCourseData(course)
-        );
-        setCourses(formattedCourses);
-        
-        // Limpiar formulario
-        setNewCourse({ nombre: '', descripcion: '', duracion_estimada: 0 });
-        setShowAddForm(false);
-        
-        alert('Curso creado exitosamente');
-      } catch (err) {
-        console.error('Error creando curso:', err);
-        alert('Error al crear el curso: ' + err.message);
-      } finally {
-        setSubmitting(false);
-      }
-    }
+  const handleViewCourseDetails = (course) => {
+    setSelectedCourse(course);
+    setShowCourseDetails(true);
+    setShowCourseManagement(false);
   };
 
-  const handleDeleteCourse = async (courseId) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este curso?')) {
-      try {
-        await teacherApiService.deleteCourse(courseId);
-        
-        // Actualizar lista local
-        setCourses(courses.filter(course => course.id !== courseId));
-        
-        alert('Curso eliminado exitosamente');
-      } catch (err) {
-        console.error('Error eliminando curso:', err);
-        alert('Error al eliminar el curso: ' + err.message);
-      }
-    }
+  const handleManageCourse = (course) => {
+    setSelectedCourse(course);
+    setShowCourseManagement(true);
+    setShowCourseDetails(false);
+  };
+
+  const handleCloseModals = () => {
+    setShowCourseDetails(false);
+    setShowCourseManagement(false);
+    setSelectedCourse(null);
   };
 
   // Mostrar estado de carga
@@ -101,6 +66,19 @@ function CourseManager({ teacherData, teacherStats }) {
           <p>Cargando cursos...</p>
         </div>
       </div>
+    );
+  }
+
+  // Mostrar la página de gestión si está seleccionada
+  if (showCourseManagement && selectedCourse) {
+    return (
+      <CourseManagementPage 
+        course={selectedCourse} 
+        onBack={() => {
+          setShowCourseManagement(false);
+          setSelectedCourse(null);
+        }}
+      />
     );
   }
 
@@ -139,88 +117,15 @@ function CourseManager({ teacherData, teacherStats }) {
             </div>
           )}
         </div>
-        <button 
-          className="add-course-btn"
-          onClick={() => setShowAddForm(true)}
-          disabled={submitting}
-        >
-          <FiPlus /> Nuevo Curso
-        </button>
       </div>
 
-      {showAddForm && (
-        <div className="add-course-form">
-          <h3>Agregar Nuevo Curso</h3>
-          <form onSubmit={handleAddCourse}>
-            <div className="form-group">
-              <label>Nombre del Curso *</label>
-              <input
-                type="text"
-                value={newCourse.nombre}
-                onChange={(e) => setNewCourse({...newCourse, nombre: e.target.value})}
-                placeholder="Ej: Matemáticas Avanzadas"
-                required
-                disabled={submitting}
-              />
-            </div>
-            <div className="form-group">
-              <label>Descripción</label>
-              <textarea
-                value={newCourse.descripcion}
-                onChange={(e) => setNewCourse({...newCourse, descripcion: e.target.value})}
-                placeholder="Descripción del curso..."
-                rows="3"
-                disabled={submitting}
-              />
-            </div>
-            <div className="form-group">
-              <label>Duración Estimada (horas)</label>
-              <input
-                type="number"
-                value={newCourse.duracion_estimada}
-                onChange={(e) => setNewCourse({...newCourse, duracion_estimada: e.target.value})}
-                placeholder="0"
-                min="0"
-                disabled={submitting}
-              />
-            </div>
-            <div className="form-actions">
-              <button 
-                type="submit" 
-                className="btn-primary"
-                disabled={submitting}
-              >
-                {submitting ? 'Creando...' : 'Crear Curso'}
-              </button>
-              <button 
-                type="button" 
-                className="btn-secondary"
-                onClick={() => setShowAddForm(false)}
-                disabled={submitting}
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+
 
       <div className="courses-grid">
         {courses.map(course => (
           <div key={course.id} className="course-card">
             <div className="course-header-card">
               <h3>{course.name}</h3>
-              <div className="course-actions">
-                <button className="action-btn">
-                  <FiEdit />
-                </button>
-                <button 
-                  className="action-btn delete"
-                  onClick={() => handleDeleteCourse(course.id)}
-                >
-                  <FiTrash2 />
-                </button>
-              </div>
             </div>
             
             <div className="course-description">
@@ -249,8 +154,18 @@ function CourseManager({ teacherData, teacherStats }) {
             </div>
 
             <div className="course-actions-bottom">
-              <button className="btn-primary">Ver Detalles</button>
-              <button className="btn-secondary">Gestionar</button>
+              <button 
+                className="btn-primary"
+                onClick={() => handleViewCourseDetails(course)}
+              >
+                Ver Detalles
+              </button>
+              <button 
+                className="btn-secondary"
+                onClick={() => handleManageCourse(course)}
+              >
+                Gestionar
+              </button>
             </div>
           </div>
         ))}
@@ -259,18 +174,58 @@ function CourseManager({ teacherData, teacherStats }) {
       {courses.length === 0 && !loading && (
         <div className="empty-state">
           <div className="empty-icon">📚</div>
-          <h3>No tienes cursos creados aún</h3>
-          <p>Crea tu primer curso para comenzar a enseñar</p>
-          <button 
-            className="btn-primary"
-            onClick={() => setShowAddForm(true)}
-          >
-            Crear tu primer curso
-          </button>
+          <h3>No tienes cursos disponibles</h3>
+          <p>Los cursos se cargan automáticamente desde la base de datos</p>
         </div>
       )}
+
+      {/* Modal de Detalles del Curso */}
+      {showCourseDetails && selectedCourse && (
+        <div className="modal-overlay" onClick={handleCloseModals}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Detalles del Curso</h3>
+              <button className="modal-close" onClick={handleCloseModals}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="course-details">
+                <h4>{selectedCourse.name}</h4>
+                <p className="course-description-text">{selectedCourse.description || 'Sin descripción'}</p>
+                
+                <div className="course-stats-details">
+                  <div className="stat-detail">
+                    <FiUsers />
+                    <span>{selectedCourse.totalStudents} estudiantes matriculados</span>
+                  </div>
+                  <div className="stat-detail">
+                    <FiBook />
+                    <span>{selectedCourse.totalModules} módulos</span>
+                  </div>
+                  <div className="stat-detail">
+                    <FiClock />
+                    <span>{selectedCourse.duration} horas estimadas</span>
+                  </div>
+                  <div className="stat-detail">
+                    <span className={`status-badge ${selectedCourse.status}`}>
+                      {selectedCourse.status === 'activo' ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                </div>
+
+                {selectedCourse.createdAt && (
+                  <div className="course-date">
+                    <strong>Fecha de creación:</strong> {new Date(selectedCourse.createdAt).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }
 
-export default CourseManager; 
+export default CourseManager;

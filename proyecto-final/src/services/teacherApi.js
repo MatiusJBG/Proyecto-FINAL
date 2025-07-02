@@ -90,6 +90,11 @@ class TeacherApiService {
     return this.makeRequest(`/profesor/${teacherId}/estudiantes/${studentId}/progreso`);
   }
 
+  // Obtener historial de interacción de un estudiante
+  async getStudentInteractionHistory(teacherId, studentId) {
+    return this.makeRequest(`/profesor/${teacherId}/estudiantes/${studentId}/historial`);
+  }
+
   // ============================================================================
   // ENDPOINTS DE GESTIÓN DE EVALUACIONES
   // ============================================================================
@@ -129,6 +134,38 @@ class TeacherApiService {
   // Obtener lecciones de un módulo
   async getModuleLessons(moduleId) {
     return this.makeRequest(`/modulos/${moduleId}/lecciones`);
+  }
+
+  // Crear un módulo
+  async createModule(courseId, moduleData) {
+    return this.makeRequest(`/cursos/${courseId}/modulos`, {
+      method: 'POST',
+      body: JSON.stringify(moduleData),
+    });
+  }
+
+  // Crear una lección
+  async createLesson(moduleId, lessonData) {
+    return this.makeRequest(`/modulos/${moduleId}/lecciones`, {
+      method: 'POST',
+      body: JSON.stringify(lessonData),
+    });
+  }
+
+  // Crear una evaluación de lección
+  async createLessonEvaluation(lessonId, evaluationData) {
+    return this.makeRequest(`/lecciones/${lessonId}/evaluaciones`, {
+      method: 'POST',
+      body: JSON.stringify(evaluationData),
+    });
+  }
+
+  // Crear una evaluación de módulo
+  async createModuleEvaluation(moduleId, evaluationData) {
+    return this.makeRequest(`/modulos/${moduleId}/evaluaciones`, {
+      method: 'POST',
+      body: JSON.stringify(evaluationData),
+    });
   }
 
   // ============================================================================
