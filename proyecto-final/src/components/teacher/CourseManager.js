@@ -2,11 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit, FiTrash2, FiUsers, FiTrendingUp, FiBook, FiClock } from 'react-icons/fi';
 import './CourseManager.css';
 import teacherApiService from '../../services/teacherApi';
-<<<<<<< HEAD
 import CourseHierarchyManager from './CourseHierarchyManager';
-=======
 import CourseManagementPage from './CourseManagementPage';
->>>>>>> e6da6637d4aa0ed93f64f1e758abeb100378e17e
 
 function CourseManager({ teacherData, teacherStats }) {
   const [courses, setCourses] = useState([]);

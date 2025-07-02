@@ -1,0 +1,29 @@
+﻿{
+    "value":  [
+                  {
+                      "Contrasena":  "123asd",
+                      "Correo_electronico":  "luism@gmail.com",
+                      "Especialidad":  "Paja",
+                      "Fecha_registro":  "Tue, 01 Jul 2025 22:00:21 GMT",
+                      "ID_Profesor":  1,
+                      "Nombre":  "Luis Miranda"
+                  },
+                  {
+                      "Contrasena":  "123asd",
+                      "Correo_electronico":  "sebasf@gmail.com",
+                      "Especialidad":  "Paja",
+                      "Fecha_registro":  "Tue, 01 Jul 2025 23:13:15 GMT",
+                      "ID_Profesor":  2,
+                      "Nombre":  "Sebastian Freire"
+                  },
+                  {
+                      "Contrasena":  "123asd",
+                      "Correo_electronico":  "kevinv@gmail.com",
+                      "Especialidad":  "Paja",
+                      "Fecha_registro":  "Tue, 01 Jul 2025 23:14:13 GMT",
+                      "ID_Profesor":  3,
+                      "Nombre":  "Kevin Velasco"
+                  }
+              ],
+    "Count":  3
+}
