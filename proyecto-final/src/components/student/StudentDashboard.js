@@ -22,6 +22,7 @@ export default function StudentDashboard({ onLogout, userData }) {
   const [estadisticas, setEstadisticas] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeSection, setActiveSection] = useState('cursos');
 
   useEffect(() => {
     if (userData && userData.ID_Estudiante) {
@@ -204,7 +205,7 @@ export default function StudentDashboard({ onLogout, userData }) {
   if (loading) {
     return (
       <div className="dashboard-container">
-        <Sidebar onLogout={onLogout} userData={userData} />
+        <Sidebar onLogout={onLogout} userData={userData} onSelectSection={setActiveSection} activeSection={activeSection} />
         <main className="dashboard-main">
           <div className="loading">Cargando datos del estudiante...</div>
         </main>
@@ -215,7 +216,7 @@ export default function StudentDashboard({ onLogout, userData }) {
   if (error) {
     return (
       <div className="dashboard-container">
-        <Sidebar onLogout={onLogout} userData={userData} />
+        <Sidebar onLogout={onLogout} userData={userData} onSelectSection={setActiveSection} activeSection={activeSection} />
         <main className="dashboard-main">
           <div className="error">Error: {error}</div>
         </main>
@@ -252,16 +253,17 @@ export default function StudentDashboard({ onLogout, userData }) {
 
   return (
     <div className="dashboard-container">
-      <Sidebar onLogout={onLogout} userData={userData} />
+      <Sidebar onLogout={onLogout} userData={userData} onSelectSection={setActiveSection} activeSection={activeSection} />
       <main className="dashboard-main">
         <UserHeader userData={userData} />
         
-        {cursosMatriculados.length === 0 ? (
+        {activeSection === 'matriculas' && (
           <CourseEnrollment 
             userData={userData} 
             onEnrollmentComplete={cargarDatosEstudiante}
           />
-        ) : (
+        )}
+        {activeSection === 'cursos' && (
           <>
             <section className="dashboard-panels">
               <div className="panel panel-progress">
@@ -293,26 +295,27 @@ export default function StudentDashboard({ onLogout, userData }) {
             </section>
             
             {/* Selector de cursos */}
-            {cursosMatriculados.length > 1 && (
-              <section className="course-selector">
-                <h3>Mis Cursos</h3>
-                <div className="course-list">
-                  {cursosMatriculados.map(curso => (
-                    <button
-                      key={curso.ID_Curso}
-                      className={`course-item ${cursoActual?.ID_Curso === curso.ID_Curso ? 'active' : ''}`}
-                      onClick={() => cambiarCursoActual(curso)}
-                    >
-                      <div className="course-info">
-                        <h4>{curso.Nombre}</h4>
-                        <p>Progreso: {Math.round(curso.Progreso_total || 0)}%</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
+            <section className="course-selector">
+              <h3>Mis Cursos</h3>
+              <div className="course-list">
+                {cursosMatriculados.map(curso => (
+                  <button
+                    key={curso.ID_Curso}
+                    className={`course-item ${cursoActual?.ID_Curso === curso.ID_Curso ? 'active' : ''}`}
+                    onClick={() => cambiarCursoActual(curso)}
+                  >
+                    <div className="course-info">
+                      <h4>{curso.Nombre}</h4>
+                      <p>Progreso: {Math.round(curso.Progreso_total || 0)}%</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
           </>
+        )}
+        {activeSection === 'notificaciones' && (
+          <NotificationPanel notifications={notificacionesMock} />
         )}
       </main>
     </div>
