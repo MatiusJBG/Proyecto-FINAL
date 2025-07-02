@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import CourseForm from './CourseForm';
 import Modal from './Modal';
-import ModuleForm from './ModuleForm';
 import LessonForm from './LessonForm';
 
 function ContentManager({ data, setData, selectedCurso, setSelectedCurso, selectedModulo, setSelectedModulo, selectedLeccion, setSelectedLeccion }) {
@@ -155,8 +154,8 @@ function ContentManager({ data, setData, selectedCurso, setSelectedCurso, select
           <thead>
             <tr style={{ background: '#1a1d23', color: '#e94560' }}>
               <th style={{ padding: '12px 8px', minWidth: 180, textAlign: 'left' }}>Curso</th>
-              <th style={{ padding: '12px 8px', minWidth: 160, textAlign: 'left' }}>Módulo</th>
-              <th style={{ padding: '12px 8px', minWidth: 160, textAlign: 'left' }}>Lección</th>
+              <th style={{ padding: '12px 8px', minWidth: 160, textAlign: 'left' }}>Docente</th>
+              <th style={{ padding: '12px 8px', minWidth: 120, textAlign: 'center' }}>Estado</th>
               <th style={{ padding: '12px 8px', minWidth: 120, textAlign: 'center' }}>Acciones</th>
             </tr>
           </thead>
@@ -165,67 +164,29 @@ function ContentManager({ data, setData, selectedCurso, setSelectedCurso, select
               <tr><td colSpan={4} style={{ textAlign: 'center', color: '#bfc9d1', padding: 24 }}>No hay cursos registrados.</td></tr>
             )}
             {data.cursos.map(curso => (
-              <React.Fragment key={curso.id}>
-                <tr style={{ background: '#23272f', borderBottom: '1px solid #353b48' }}>
-                  <td style={{ padding: '10px 8px', fontWeight: 600, color: '#fff' }}>
-                    {curso.nombre}
-                    {curso.descripcion && <div style={{ color: '#bfc9d1', fontSize: '0.95em', marginTop: 2 }}>{curso.descripcion}</div>}
-                  </td>
-                  <td colSpan={2}></td>
-                  <td style={{ textAlign: 'center' }}>
-                    <button className="admin-btn" style={{ marginRight: 6 }} onClick={() => { setShowModuleForm(true); setPendingCursoId(curso.id); }}>+ Módulo</button>
-                    <button className="admin-btn" style={{ marginRight: 6 }} onClick={() => setConfirmDelete({ type: 'curso', ids: { cursoId: curso.id } })}>Eliminar</button>
-                  </td>
-                </tr>
-                {curso.modulos.length === 0 && (
-                  <tr style={{ background: '#23272f' }}>
-                    <td></td>
-                    <td colSpan={2} style={{ color: '#bfc9d1', fontStyle: 'italic', padding: '8px 8px' }}>Sin módulos</td>
-                    <td></td>
-                  </tr>
-                )}
-                {curso.modulos.map(modulo => (
-                  <React.Fragment key={modulo.id}>
-                    <tr style={{ background: '#262a33' }}>
-                      <td></td>
-                      <td style={{ padding: '10px 8px', fontWeight: 500, color: '#f1f1f1' }}>{modulo.nombre}</td>
-                      <td colSpan={1}></td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button className="admin-btn" style={{ marginRight: 6 }} onClick={() => { setShowLessonForm(true); setPendingCursoId(curso.id); setPendingModuloId(modulo.id); }}>+ Lección</button>
-                        <button className="admin-btn" style={{ marginRight: 6 }} onClick={() => setConfirmDelete({ type: 'modulo', ids: { cursoId: curso.id, moduloId: modulo.id } })}>Eliminar</button>
-                      </td>
-                    </tr>
-                    {modulo.lecciones.length === 0 && (
-                      <tr style={{ background: '#262a33' }}>
-                        <td></td><td></td>
-                        <td style={{ color: '#bfc9d1', fontStyle: 'italic', padding: '8px 8px' }}>Sin lecciones</td>
-                        <td></td>
-                      </tr>
-                    )}
-                    {modulo.lecciones.map(leccion => (
-                      <tr key={leccion.id} style={{ background: '#2b2f38' }}>
-                        <td></td><td></td>
-                        <td style={{ padding: '10px 8px', color: '#f1f1f1' }}>{leccion.nombre}</td>
-                        <td style={{ textAlign: 'center' }}>
-                          <button className="admin-btn" style={{ marginRight: 6 }} onClick={() => setConfirmDelete({ type: 'leccion', ids: { cursoId: curso.id, moduloId: modulo.id, leccionId: leccion.id } })}>Eliminar</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </React.Fragment>
+              <tr key={curso.id} style={{ background: '#23272f', borderBottom: '1px solid #353b48' }}>
+                <td style={{ padding: '10px 8px', fontWeight: 600, color: '#fff' }}>
+                  {curso.nombre}
+                  {curso.descripcion && <div style={{ color: '#bfc9d1', fontSize: '0.95em', marginTop: 2 }}>{curso.descripcion}</div>}
+                </td>
+                <td style={{ padding: '10px 8px', color: '#bfc9d1' }}>{curso.docente || 'Sin asignar'}</td>
+                <td style={{ textAlign: 'center' }}>
+                  <button className="admin-btn" style={{ background: curso.activo ? '#43a047' : '#e94560', color: '#fff', fontWeight: 600 }} onClick={() => {
+                    const nuevosCursos = data.cursos.map(c => c.id === curso.id ? { ...c, activo: !c.activo } : c);
+                    setData({ ...data, cursos: nuevosCursos });
+                  }}>
+                    {curso.activo ? 'Activo' : 'Inactivo'}
+                  </button>
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <button className="admin-btn" style={{ marginRight: 6 }} onClick={() => setConfirmDelete({ type: 'curso', ids: { cursoId: curso.id } })}>Eliminar</button>
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Modal para agregar módulo */}
-      <Modal open={showModuleForm} onClose={() => { setShowModuleForm(false); setPendingCursoId(null); }}>
-        <ModuleForm
-          onAdd={modulo => agregarModulo(pendingCursoId, modulo)}
-          onCancel={() => { setShowModuleForm(false); setPendingCursoId(null); }}
-        />
-      </Modal>
 
       {/* Modal para agregar lección */}
       <Modal open={showLessonForm} onClose={() => { setShowLessonForm(false); setPendingCursoId(null); setPendingModuloId(null); }}>

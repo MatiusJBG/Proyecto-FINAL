@@ -64,7 +64,7 @@ function GradeManager({ teacherData }) {
             onChange={(e) => setSelectedCourse(e.target.value)}
           >
             <option value="">Todos los cursos</option>
-            {teacherData.courses.map(course => (
+            {(teacherData && Array.isArray(teacherData.courses) ? teacherData.courses : []).map(course => (
               <option key={course.id} value={course.name}>{course.name}</option>
             ))}
           </select>
@@ -94,7 +94,7 @@ function GradeManager({ teacherData }) {
             </tr>
           </thead>
           <tbody>
-            {filteredGrades.map(grade => (
+            {(filteredGrades || []).map(grade => (
               <tr key={grade.id}>
                 <td>
                   <div className="student-info">

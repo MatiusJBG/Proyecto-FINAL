@@ -28,24 +28,24 @@ function StudentManager() {
       {loading && <div>Cargando...</div>}
       {error && <div style={{color:'#e94560'}}>{error}</div>}
       {!loading && !error && (
-        <table className="admin-table">
+        <table className="admin-table" style={{width:'100%', borderCollapse:'collapse', background:'#23272f', borderRadius:10, boxShadow:'0 2px 12px #0002'}}>
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Email</th>
-              <th>Semestre</th>
-              <th>Fecha de nacimiento</th>
+            <tr style={{background:'#1a1d23', color:'#e94560'}}>
+              <th style={{padding:'12px 8px'}}>ID</th>
+              <th style={{padding:'12px 8px'}}>Nombre</th>
+              <th style={{padding:'12px 8px'}}>Email</th>
+              <th style={{padding:'12px 8px'}}>Semestre</th>
+              <th style={{padding:'12px 8px'}}>Fecha de nacimiento</th>
             </tr>
           </thead>
           <tbody>
             {students.map(est => (
               <tr key={est.ID_Estudiante || est.id}>
-                <td>{est.ID_Estudiante || est.id}</td>
-                <td>{est.Nombre || est.nombre}</td>
-                <td>{est.Correo_electronico || est.correo_electronico}</td>
-                <td>{est.Semestre || est.semestre}</td>
-                <td>{est.Fecha_nacimiento || est.fecha_nacimiento}</td>
+                <td style={{padding:'10px 8px'}}>{est.ID_Estudiante || est.id}</td>
+                <td style={{padding:'10px 8px'}}>{est.Nombre || est.nombre}</td>
+                <td style={{padding:'10px 8px'}}>{est.Correo_electronico || est.correo_electronico}</td>
+                <td style={{padding:'10px 8px'}}>{est.Semestre || est.semestre}</td>
+                <td style={{padding:'10px 8px'}}>{est.Fecha_nacimiento || est.fecha_nacimiento}</td>
               </tr>
             ))}
           </tbody>

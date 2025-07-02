@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiSearch, FiMail, FiEye, FiBook, FiTrendingUp, FiCalendar } from 'react-icons/fi';
+import { FiSearch, FiMail, FiEye, FiBook, FiTrendingUp, FiCalendar, FiUsers } from 'react-icons/fi';
 import './StudentManager.css';
 import teacherApiService from '../../services/teacherApi';
 
@@ -174,10 +174,16 @@ function StudentManager({ teacherData, teacherStats }) {
                     <div className="progress-bar">
                       <div 
                         className="progress-fill" 
-                        style={{ width: `${student.progress}%` }}
+                        style={{ width: `${typeof student.progress === 'number' ? student.progress : parseFloat(student.progress) || 0}%` }}
                       ></div>
                     </div>
-                    <span className="progress-text">{student.progress.toFixed(1)}%</span>
+                    <span className="progress-text">{
+                      typeof student.progress === 'number'
+                        ? student.progress.toFixed(1)
+                        : !isNaN(parseFloat(student.progress))
+                          ? parseFloat(student.progress).toFixed(1)
+                          : '0.0'
+                    }%</span>
                   </div>
                 </td>
                 <td>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AdminPanel.css';
-import LogoutIcon from './LogoutIcon';
+import DoorIcon from './DoorIcon';
 import ContentManager from './admin/ContentManager';
 import MaterialManager from './admin/MaterialManager';
 import SearchManager from './admin/SearchManager';
@@ -34,11 +34,11 @@ function AdminPanel() {
             id: c.ID_Curso || c.id,
             nombre: c.Nombre || c.nombre,
             descripcion: c.Descripcion || c.descripcion || '',
-            estado: c.Estado || c.estado,
+            activo: (c.Estado || c.estado || '').toLowerCase() === 'activo',
+            docente: c.Profesor_Nombre || c.docente || '',
             duracion: c.Duracion_estimada || c.duracion_estimada,
             idProfesor: c.ID_Profesor || c.id_profesor,
             modulos: [],
-            // Puedes agregar más campos si los necesitas
           }));
           setData(d => ({ ...d, cursos: cursosConModulos }));
         }
@@ -206,17 +206,17 @@ function AdminPanel() {
       <div className="admin-panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="admin-title">Panel de Administración</h2>
-          <button
-            className="admin-btn logout-btn"
+          <span
+            title="Cerrar sesión"
+            style={{ cursor: 'pointer', marginLeft: 16 }}
             onClick={() => {
               localStorage.clear();
               sessionStorage.clear();
               window.location.href = '/login';
             }}
           >
-            <LogoutIcon style={{ marginRight: 8, verticalAlign: 'middle' }} />
-            Cerrar Sesión
-          </button>
+            <DoorIcon style={{ fontSize: 28, color: '#333', verticalAlign: 'middle' }} />
+          </span>
         </div>
         <AdminTabs active={activeTab} setActive={setActiveTab} />
         {activeTab === 'contenido' && (
