@@ -311,7 +311,7 @@ def eliminar_curso(curso_id):
     finally:
         conn.close()
 
-# Endpoint para obtener módulos de un curso
+# Endpoint para obtener módulos de un curso con lecciones y evaluaciones
 @app.route('/api/cursos/<int:curso_id>/modulos', methods=['GET'])
 def get_modulos_curso(curso_id):
     conn = get_connection()
@@ -319,12 +319,43 @@ def get_modulos_curso(curso_id):
         return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
     try:
         cursor = conn.cursor(dictionary=True)
+        
+        # Obtener módulos
         cursor.execute('''
             SELECT * FROM Modulos 
             WHERE ID_Curso = %s 
             ORDER BY Orden
         ''', (curso_id,))
         modulos = cursor.fetchall()
+        
+        # Para cada módulo, obtener sus lecciones
+        for modulo in modulos:
+            cursor.execute('''
+                SELECT * FROM Lecciones 
+                WHERE ID_Modulo = %s 
+                ORDER BY Orden
+            ''', (modulo['ID_Modulo'],))
+            lecciones = cursor.fetchall()
+            
+            # Para cada lección, obtener sus evaluaciones
+            for leccion in lecciones:
+                cursor.execute('''
+                    SELECT * FROM Evaluaciones 
+                    WHERE ID_Leccion = %s
+                ''', (leccion['ID_Leccion'],))
+                evaluaciones = cursor.fetchall()
+                leccion['evaluaciones'] = evaluaciones
+            
+            modulo['lecciones'] = lecciones
+            
+            # Obtener evaluaciones del módulo (no de lecciones específicas)
+            cursor.execute('''
+                SELECT * FROM Evaluaciones 
+                WHERE ID_Modulo = %s AND ID_Leccion IS NULL
+            ''', (modulo['ID_Modulo'],))
+            evaluaciones_modulo = cursor.fetchall()
+            modulo['evaluaciones_modulo'] = evaluaciones_modulo
+        
         return jsonify(modulos)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -347,6 +378,222 @@ def get_lecciones_modulo(modulo_id):
         lecciones = cursor.fetchall()
         return jsonify(lecciones)
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para crear un módulo
+@app.route('/api/cursos/<int:curso_id>/modulos', methods=['POST'])
+def crear_modulo(curso_id):
+    data = request.json
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion', '')
+    duracion_estimada = data.get('duracion_estimada', 0)
+    
+    if not nombre:
+        return jsonify({'error': 'El nombre del módulo es obligatorio'}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        
+        # Obtener el siguiente orden
+        cursor.execute('''
+            SELECT COALESCE(MAX(Orden), 0) + 1 as siguiente_orden
+            FROM Modulos 
+            WHERE ID_Curso = %s
+        ''', (curso_id,))
+        siguiente_orden = cursor.fetchone()[0]
+        
+        # Insertar el módulo
+        cursor.execute('''
+            INSERT INTO Modulos (ID_Curso, Nombre, Descripcion, Orden, Duracion_estimada)
+            VALUES (%s, %s, %s, %s, %s)
+        ''', (curso_id, nombre, descripcion, siguiente_orden, duracion_estimada))
+        
+        modulo_id = cursor.lastrowid
+        conn.commit()
+        
+        # Retornar el módulo creado
+        cursor.execute('SELECT * FROM Modulos WHERE ID_Modulo = %s', (modulo_id,))
+        modulo_creado = cursor.fetchone()
+        
+        return jsonify({
+            'message': 'Módulo creado exitosamente',
+            'modulo': {
+                'ID_Modulo': modulo_creado[0],
+                'ID_Curso': modulo_creado[1],
+                'Nombre': modulo_creado[2],
+                'Descripcion': modulo_creado[3],
+                'Orden': modulo_creado[4],
+                'Duracion_estimada': modulo_creado[5]
+            }
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para crear una lección
+@app.route('/api/modulos/<int:modulo_id>/lecciones', methods=['POST'])
+def crear_leccion(modulo_id):
+    data = request.json
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion', '')
+    contenido = data.get('contenido', '')
+    duracion_estimada = data.get('duracion_estimada', 0)
+    es_obligatoria = data.get('es_obligatoria', True)
+    
+    if not nombre:
+        return jsonify({'error': 'El nombre de la lección es obligatorio'}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        
+        # Obtener el siguiente orden
+        cursor.execute('''
+            SELECT COALESCE(MAX(Orden), 0) + 1 as siguiente_orden
+            FROM Lecciones 
+            WHERE ID_Modulo = %s
+        ''', (modulo_id,))
+        siguiente_orden = cursor.fetchone()[0]
+        
+        # Insertar la lección
+        cursor.execute('''
+            INSERT INTO Lecciones (ID_Modulo, Nombre, Descripcion, Contenido, Orden, Duracion_estimada, Es_obligatoria)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ''', (modulo_id, nombre, descripcion, contenido, siguiente_orden, duracion_estimada, es_obligatoria))
+        
+        leccion_id = cursor.lastrowid
+        conn.commit()
+        
+        # Retornar la lección creada
+        cursor.execute('SELECT * FROM Lecciones WHERE ID_Leccion = %s', (leccion_id,))
+        leccion_creada = cursor.fetchone()
+        
+        return jsonify({
+            'message': 'Lección creada exitosamente',
+            'leccion': {
+                'ID_Leccion': leccion_creada[0],
+                'ID_Modulo': leccion_creada[1],
+                'Nombre': leccion_creada[2],
+                'Descripcion': leccion_creada[3],
+                'Contenido': leccion_creada[4],
+                'Orden': leccion_creada[5],
+                'Duracion_estimada': leccion_creada[6],
+                'Es_obligatoria': leccion_creada[7]
+            }
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para crear una evaluación
+@app.route('/api/lecciones/<int:leccion_id>/evaluaciones', methods=['POST'])
+def crear_evaluacion_leccion(leccion_id):
+    data = request.json
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion', '')
+    puntaje_aprobacion = data.get('puntaje_aprobacion', 70.0)
+    max_intentos = data.get('max_intentos', 3)
+    
+    if not nombre:
+        return jsonify({'error': 'El nombre de la evaluación es obligatorio'}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        
+        # Insertar la evaluación
+        cursor.execute('''
+            INSERT INTO Evaluaciones (ID_Leccion, ID_Modulo, Nombre, Descripcion, Puntaje_aprobacion, Max_intentos)
+            VALUES (%s, NULL, %s, %s, %s, %s)
+        ''', (leccion_id, nombre, descripcion, puntaje_aprobacion, max_intentos))
+        
+        evaluacion_id = cursor.lastrowid
+        conn.commit()
+        
+        # Retornar la evaluación creada
+        cursor.execute('SELECT * FROM Evaluaciones WHERE ID_Evaluacion = %s', (evaluacion_id,))
+        evaluacion_creada = cursor.fetchone()
+        
+        return jsonify({
+            'message': 'Evaluación creada exitosamente',
+            'evaluacion': {
+                'ID_Evaluacion': evaluacion_creada[0],
+                'ID_Leccion': evaluacion_creada[1],
+                'ID_Modulo': evaluacion_creada[2],
+                'Nombre': evaluacion_creada[3],
+                'Descripcion': evaluacion_creada[4],
+                'Puntaje_aprobacion': evaluacion_creada[5],
+                'Max_intentos': evaluacion_creada[6]
+            }
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para crear una evaluación de módulo
+@app.route('/api/modulos/<int:modulo_id>/evaluaciones', methods=['POST'])
+def crear_evaluacion_modulo(modulo_id):
+    data = request.json
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion', '')
+    puntaje_aprobacion = data.get('puntaje_aprobacion', 70.0)
+    max_intentos = data.get('max_intentos', 3)
+    
+    if not nombre:
+        return jsonify({'error': 'El nombre de la evaluación es obligatorio'}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        
+        # Insertar la evaluación
+        cursor.execute('''
+            INSERT INTO Evaluaciones (ID_Leccion, ID_Modulo, Nombre, Descripcion, Puntaje_aprobacion, Max_intentos)
+            VALUES (NULL, %s, %s, %s, %s, %s)
+        ''', (modulo_id, nombre, descripcion, puntaje_aprobacion, max_intentos))
+        
+        evaluacion_id = cursor.lastrowid
+        conn.commit()
+        
+        # Retornar la evaluación creada
+        cursor.execute('SELECT * FROM Evaluaciones WHERE ID_Evaluacion = %s', (evaluacion_id,))
+        evaluacion_creada = cursor.fetchone()
+        
+        return jsonify({
+            'message': 'Evaluación creada exitosamente',
+            'evaluacion': {
+                'ID_Evaluacion': evaluacion_creada[0],
+                'ID_Leccion': evaluacion_creada[1],
+                'ID_Modulo': evaluacion_creada[2],
+                'Nombre': evaluacion_creada[3],
+                'Descripcion': evaluacion_creada[4],
+                'Puntaje_aprobacion': evaluacion_creada[5],
+                'Max_intentos': evaluacion_creada[6]
+            }
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()

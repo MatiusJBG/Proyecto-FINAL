@@ -477,8 +477,8 @@ class GestorMateriales:
                         return recurso
         return None
     
-    def actualizar_recurso(self, recurso_id: int, nombre: str = None, 
-                          url: str = None, orden: int = None) -> bool:
+    def actualizar_recurso(self, recurso_id: int, nombre: Optional[str] = None, 
+                          url: Optional[str] = None, orden: Optional[int] = None) -> bool:
         """Actualiza un recurso existente"""
         for curso in self.gestor_contenido.cursos.values():
             for modulo in curso.obtener_modulos():
@@ -530,7 +530,7 @@ class Profesor:
     """Clase para representar un profesor"""
     
     def __init__(self, id: int, nombre: str, correo_electronico: str, 
-                 especialidad: str, fecha_registro: datetime = None):
+                 especialidad: str, fecha_registro: Optional[datetime] = None):
         self.id = id
         self.nombre = nombre
         self.correo_electronico = correo_electronico
@@ -616,7 +616,7 @@ class ResultadoEvaluacion:
     """Clase para representar un resultado de evaluación"""
     
     def __init__(self, id: int, id_estudiante: int, id_evaluacion: int, 
-                 puntaje: float, aprobado: bool, fecha_intento: datetime = None,
+                 puntaje: float, aprobado: bool, fecha_intento: Optional[datetime] = None,
                  tiempo_utilizado: int = 0):
         self.id = id
         self.id_estudiante = id_estudiante
@@ -643,7 +643,7 @@ class Matricula:
     
     def __init__(self, id: int, id_estudiante: int, id_curso: int, 
                  estado: str = 'activo', progreso_total: float = 0.0,
-                 fecha_matricula: datetime = None):
+                 fecha_matricula: Optional[datetime] = None):
         self.id = id
         self.id_estudiante = id_estudiante
         self.id_curso = id_curso
