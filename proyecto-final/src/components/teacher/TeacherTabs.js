@@ -6,7 +6,6 @@ function TeacherTabs({ active, setActive }) {
   const tabs = [
     { key: 'cursos', label: 'Mis Cursos', icon: <FiBook /> },
     { key: 'estudiantes', label: 'Estudiantes', icon: <FiUsers /> },
-    { key: 'evaluaciones', label: 'Evaluaciones', icon: <FiFileText /> },
     { key: 'calificaciones', label: 'Calificaciones', icon: <FiBarChart2 /> },
     { key: 'analiticas', label: 'Analíticas', icon: <FiTrendingUp /> },
   ];

@@ -4,7 +4,7 @@ import './TeacherPanel.css';
 import TeacherTabs from './teacher/TeacherTabs';
 import CourseManager from './teacher/CourseManager';
 import StudentManager from './teacher/StudentManager';
-import EvaluationManager from './teacher/EvaluationManager';
+
 import GradeManager from './teacher/GradeManager';
 import AnalyticsPanel from './teacher/AnalyticsPanel';
 import teacherApiService from '../services/teacherApi';
@@ -147,12 +147,7 @@ function TeacherPanel({ onLogout, userData }) {
               teacherStats={teacherStats}
             />
           )}
-          {activeTab === 'evaluaciones' && (
-            <EvaluationManager 
-              teacherData={teacherData}
-              teacherStats={teacherStats}
-            />
-          )}
+
           {activeTab === 'calificaciones' && (
             <GradeManager 
               teacherData={teacherData}
