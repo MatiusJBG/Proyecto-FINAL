@@ -3,9 +3,92 @@ from db_connect import get_connection
 from flask_cors import CORS
 from datetime import datetime
 import hashlib
+from models import GestorContenido, GestorMateriales, Curso, Modulo, Leccion, Recurso
 
 app = Flask(__name__)
 CORS(app)
+
+# Inicializar gestores orientados a objetos
+gestor_contenido = GestorContenido()
+gestor_materiales = GestorMateriales(gestor_contenido)
+
+# Función para cargar datos desde la base de datos al gestor de contenido
+def cargar_datos_gestor():
+    """Carga los datos de la base de datos al gestor de contenido"""
+    conn = get_connection()
+    if not conn:
+        return
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Cargar cursos
+        cursor.execute('SELECT * FROM Cursos WHERE Estado = "activo"')
+        cursos_data = cursor.fetchall()
+        
+        for curso_data in cursos_data:
+            curso = Curso(
+                id=curso_data['ID_Curso'],
+                nombre=curso_data['Nombre'],
+                descripcion=curso_data.get('Descripcion', ''),
+                duracion_estimada=curso_data.get('Duracion_estimada', 0),
+                id_profesor=curso_data.get('ID_Profesor')
+            )
+            gestor_contenido.agregar_curso(curso)
+            
+            # Cargar módulos del curso
+            cursor.execute('SELECT * FROM Modulos WHERE ID_Curso = %s ORDER BY Orden', (curso.id,))
+            modulos_data = cursor.fetchall()
+            
+            for modulo_data in modulos_data:
+                modulo = Modulo(
+                    id=modulo_data['ID_Modulo'],
+                    nombre=modulo_data['Nombre'],
+                    descripcion=modulo_data.get('Descripcion', ''),
+                    duracion_estimada=modulo_data.get('Duracion_estimada', 0),
+                    id_curso=modulo_data['ID_Curso']
+                )
+                curso.agregar_modulo(modulo)
+                
+                # Cargar lecciones del módulo
+                cursor.execute('SELECT * FROM Lecciones WHERE ID_Modulo = %s ORDER BY Orden', (modulo.id,))
+                lecciones_data = cursor.fetchall()
+                
+                for leccion_data in lecciones_data:
+                    leccion = Leccion(
+                        id=leccion_data['ID_Leccion'],
+                        nombre=leccion_data['Nombre'],
+                        contenido=leccion_data.get('Contenido', ''),
+                        duracion_estimada=leccion_data.get('Duracion_estimada', 0),
+                        id_modulo=leccion_data['ID_Modulo'],
+                        es_obligatoria=leccion_data.get('Es_obligatoria', True)
+                    )
+                    modulo.agregar_leccion(leccion)
+                    
+                    # Cargar recursos de la lección
+                    cursor.execute('SELECT * FROM Recursos WHERE ID_Leccion = %s ORDER BY Orden', (leccion.id,))
+                    recursos_data = cursor.fetchall()
+                    
+                    for recurso_data in recursos_data:
+                        recurso = Recurso(
+                            id=recurso_data['ID_Recurso'],
+                            nombre=recurso_data['Nombre'],
+                            tipo=recurso_data['Tipo'],
+                            url=recurso_data['URL'],
+                            orden=recurso_data['Orden'],
+                            duracion=recurso_data.get('Duracion')
+                        )
+                        leccion.agregar_recurso(recurso)
+        
+        print(f"✅ Cargados {len(cursos_data)} cursos con su estructura jerárquica")
+        
+    except Exception as e:
+        print(f"❌ Error cargando datos al gestor: {e}")
+    finally:
+        conn.close()
+
+# Cargar datos al iniciar la aplicación
+cargar_datos_gestor()
 
 # Función para hashear contraseñas
 def hash_password(password):
@@ -732,6 +815,291 @@ def add_usuario():
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
+
+# ============================================================================
+# ENDPOINTS PARA GESTIÓN DE MATERIALES (CRUD) - PROGRAMACIÓN ORIENTADA A OBJETOS
+# ============================================================================
+
+@app.route('/api/materiales/crear', methods=['POST'])
+def crear_material():
+    """Crea un nuevo material/recurso usando el gestor orientado a objetos"""
+    data = request.json
+    leccion_id = data.get('leccion_id')
+    nombre = data.get('nombre')
+    tipo = data.get('tipo')
+    url = data.get('url')
+    orden = data.get('orden', 0)
+    duracion = data.get('duracion')
+    
+    if not all([leccion_id, nombre, tipo, url]):
+        return jsonify({'error': 'Faltan datos obligatorios'}), 400
+    
+    # Crear recurso usando el gestor de materiales
+    recurso = gestor_materiales.crear_recurso(leccion_id, nombre, tipo, url, orden, duracion)
+    
+    if not recurso:
+        return jsonify({'error': 'No se pudo crear el material'}), 400
+    
+    # Persistir en base de datos
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO Recursos (ID_Leccion, Nombre, Tipo, URL, Orden, Duracion)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        ''', (leccion_id, nombre, tipo, url, orden, duracion))
+        conn.commit()
+        
+        return jsonify({
+            'message': 'Material creado exitosamente',
+            'material': recurso.to_dict()
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/materiales/<int:recurso_id>', methods=['PUT'])
+def actualizar_material(recurso_id):
+    """Actualiza un material existente"""
+    data = request.json
+    nombre = data.get('nombre')
+    url = data.get('url')
+    orden = data.get('orden')
+    
+    if not any([nombre, url, orden is not None]):
+        return jsonify({'error': 'Debe proporcionar al menos un campo para actualizar'}), 400
+    
+    # Actualizar usando el gestor de materiales
+    actualizado = gestor_materiales.actualizar_recurso(recurso_id, nombre, url, orden)
+    
+    if not actualizado:
+        return jsonify({'error': 'Material no encontrado'}), 404
+    
+    # Persistir cambios en base de datos
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        updates = []
+        params = []
+        
+        if nombre:
+            updates.append('Nombre = %s')
+            params.append(nombre)
+        if url:
+            updates.append('URL = %s')
+            params.append(url)
+        if orden is not None:
+            updates.append('Orden = %s')
+            params.append(orden)
+        
+        params.append(recurso_id)
+        query = f'UPDATE Recursos SET {", ".join(updates)} WHERE ID_Recurso = %s'
+        cursor.execute(query, params)
+        conn.commit()
+        
+        return jsonify({'message': 'Material actualizado exitosamente'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/materiales/<int:recurso_id>', methods=['DELETE'])
+def eliminar_material(recurso_id):
+    """Elimina un material"""
+    # Eliminar usando el gestor de materiales
+    eliminado = gestor_materiales.eliminar_recurso(recurso_id)
+    
+    if not eliminado:
+        return jsonify({'error': 'Material no encontrado'}), 404
+    
+    # Persistir eliminación en base de datos
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM Recursos WHERE ID_Recurso = %s', (recurso_id,))
+        conn.commit()
+        
+        return jsonify({'message': 'Material eliminado exitosamente'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/materiales/<int:recurso_id>', methods=['GET'])
+def obtener_material(recurso_id):
+    """Obtiene un material específico"""
+    recurso = gestor_materiales.obtener_recurso(recurso_id)
+    
+    if not recurso:
+        return jsonify({'error': 'Material no encontrado'}), 404
+    
+    return jsonify(recurso.to_dict())
+
+@app.route('/api/lecciones/<int:leccion_id>/materiales', methods=['GET'])
+def listar_materiales_leccion(leccion_id):
+    """Lista todos los materiales de una lección"""
+    recursos = gestor_materiales.listar_recursos_leccion(leccion_id)
+    
+    return jsonify([recurso.to_dict() for recurso in recursos])
+
+# ============================================================================
+# ENDPOINTS PARA BÚSQUEDAS EN ESTRUCTURA JERÁRQUICA
+# ============================================================================
+
+@app.route('/api/buscar', methods=['GET'])
+def buscar_contenido():
+    """Busca contenido en la estructura jerárquica de todos los cursos"""
+    termino = request.args.get('termino', '')
+    
+    if not termino:
+        return jsonify({'error': 'Término de búsqueda requerido'}), 400
+    
+    resultados = gestor_contenido.buscar_contenido(termino)
+    
+    return jsonify({
+        'termino': termino,
+        'total_resultados': len(resultados),
+        'resultados': resultados
+    })
+
+@app.route('/api/estructura-completa', methods=['GET'])
+def obtener_estructura_completa():
+    """Obtiene la estructura jerárquica completa de todos los cursos"""
+    estructura = gestor_contenido.obtener_estructura_completa()
+    
+    return jsonify(estructura)
+
+@app.route('/api/cursos/<int:curso_id>/estructura', methods=['GET'])
+def obtener_estructura_curso(curso_id):
+    """Obtiene la estructura jerárquica de un curso específico"""
+    curso = gestor_contenido.obtener_curso(curso_id)
+    
+    if not curso:
+        return jsonify({'error': 'Curso no encontrado'}), 404
+    
+    return jsonify(curso.to_dict())
+
+# ============================================================================
+# ENDPOINTS PARA ÁRBOL DE DECISIÓN MEJORADO
+# ============================================================================
+
+@app.route('/api/arbol-decision', methods=['GET'])
+def obtener_arbol_decision():
+    """Obtiene la estructura del árbol de decisión"""
+    return jsonify(gestor_contenido.arbol_decision.to_dict())
+
+@app.route('/api/estudiante/<int:estudiante_id>/recomendacion-avanzada', methods=['POST'])
+def generar_recomendacion_avanzada(estudiante_id):
+    """Genera una recomendación avanzada usando el árbol de decisión orientado a objetos"""
+    # Obtener datos del estudiante
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT 
+                AVG(m.Progreso_total) as promedio_progreso,
+                COUNT(DISTINCT pl.ID_Leccion) as lecciones_completadas,
+                AVG(re.Puntaje) as promedio_puntajes,
+                COUNT(DISTINCT re.ID_Evaluacion) as total_evaluaciones,
+                COUNT(CASE WHEN re.Aprobado = 1 THEN 1 END) as evaluaciones_aprobadas,
+                AVG(pl.Tiempo_dedicado) as tiempo_promedio
+            FROM Estudiantes e
+            LEFT JOIN Matriculas m ON e.ID_Estudiante = m.ID_Estudiante
+            LEFT JOIN Progreso_Lecciones pl ON e.ID_Estudiante = pl.ID_Estudiante
+            LEFT JOIN Resultados_Evaluaciones re ON e.ID_Estudiante = re.ID_Estudiante
+            WHERE e.ID_Estudiante = %s
+        ''', (estudiante_id,))
+        
+        datos = cursor.fetchone()
+        
+        if not datos:
+            return jsonify({'error': 'Estudiante no encontrado'}), 404
+        
+        # Preparar datos para el árbol de decisión
+        datos_estudiante = {
+            'promedio_progreso': float(datos['promedio_progreso'] or 0),
+            'lecciones_completadas': int(datos['lecciones_completadas'] or 0),
+            'promedio_puntajes': float(datos['promedio_puntajes'] or 0),
+            'total_evaluaciones': int(datos['total_evaluaciones'] or 0),
+            'evaluaciones_aprobadas': int(datos['evaluaciones_aprobadas'] or 0),
+            'tiempo_promedio': float(datos['tiempo_promedio'] or 0)
+        }
+        
+        # Generar recomendación usando el gestor de contenido
+        recomendacion = gestor_contenido.generar_recomendacion(datos_estudiante)
+        
+        return jsonify({
+            'estudiante_id': estudiante_id,
+            'datos_estudiante': datos_estudiante,
+            'recomendacion': recomendacion
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# ============================================================================
+# ENDPOINTS PARA GESTIÓN DE CONTENIDO JERÁRQUICO
+# ============================================================================
+
+@app.route('/api/cursos/<int:curso_id>/nodo/<int:nodo_id>', methods=['GET'])
+def obtener_nodo_contenido(curso_id, nodo_id):
+    """Obtiene un nodo específico de la estructura jerárquica"""
+    curso = gestor_contenido.obtener_curso(curso_id)
+    
+    if not curso:
+        return jsonify({'error': 'Curso no encontrado'}), 404
+    
+    nodo = curso.buscar_por_id(nodo_id)
+    
+    if not nodo:
+        return jsonify({'error': 'Nodo no encontrado'}), 404
+    
+    return jsonify({
+        'nodo': nodo.to_dict(),
+        'ruta': nodo.obtener_ruta(),
+        'profundidad': nodo.obtener_profundidad(),
+        'total_hijos': nodo.contar_hijos()
+    })
+
+@app.route('/api/cursos/<int:curso_id>/buscar', methods=['GET'])
+def buscar_en_curso(curso_id, termino):
+    """Busca contenido dentro de un curso específico"""
+    curso = gestor_contenido.obtener_curso(curso_id)
+    
+    if not curso:
+        return jsonify({'error': 'Curso no encontrado'}), 404
+    
+    termino = request.args.get('termino', '')
+    
+    if not termino:
+        return jsonify({'error': 'Término de búsqueda requerido'}), 400
+    
+    resultados = curso.buscar_por_nombre(termino)
+    
+    return jsonify({
+        'curso_id': curso_id,
+        'termino': termino,
+        'total_resultados': len(resultados),
+        'resultados': [nodo.to_dict() for nodo in resultados]
+    })
 
 @app.route('/')
 def home():

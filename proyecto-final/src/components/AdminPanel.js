@@ -174,7 +174,9 @@ function AdminPanel() {
             setSelectedLeccion={setSelectedLeccion}
           />
         )}
-        {activeTab === 'materiales' && <MaterialManager data={data} setData={setData} />}
+        {activeTab === 'materiales' && <MaterialManager />}
+        {activeTab === 'busqueda' && <SearchManager />}
+        {activeTab === 'arboldecision' && <DecisionTreeManager />}
         {activeTab === 'evaluaciones' && <EvaluationManager data={data} setData={setData} />}
         {activeTab === 'crearusuario' && <CreateUser />}
         {activeTab === 'creardocente' && <CreateTeacher />}
