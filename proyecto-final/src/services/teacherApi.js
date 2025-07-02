@@ -90,6 +90,11 @@ class TeacherApiService {
     return this.makeRequest(`/profesor/${teacherId}/estudiantes/${studentId}/progreso`);
   }
 
+  // Obtener historial de interacción de un estudiante
+  async getStudentInteractionHistory(teacherId, studentId) {
+    return this.makeRequest(`/profesor/${teacherId}/estudiantes/${studentId}/historial`);
+  }
+
   // ============================================================================
   // ENDPOINTS DE GESTIÓN DE EVALUACIONES
   // ============================================================================

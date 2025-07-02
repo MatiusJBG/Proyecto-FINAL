@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiSearch, FiMail, FiEye, FiBook, FiTrendingUp, FiCalendar } from 'react-icons/fi';
+import { FiSearch, FiMail, FiEye, FiBook, FiTrendingUp, FiCalendar, FiClock } from 'react-icons/fi';
 import './StudentManager.css';
 import teacherApiService from '../../services/teacherApi';
 
@@ -10,6 +10,11 @@ function StudentManager({ teacherData, teacherStats }) {
   const [error, setError] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [courses, setCourses] = useState([]);
+  const [showStudentDetail, setShowStudentDetail] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [studentHistory, setStudentHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [errorHistory, setErrorHistory] = useState(null);
 
   // Cargar cursos y estudiantes
   useEffect(() => {
@@ -66,6 +71,29 @@ function StudentManager({ teacherData, teacherStats }) {
     
     return matchesSearch && matchesCourse;
   });
+
+  const handleViewStudent = async (student) => {
+    setSelectedStudent(student);
+    setShowStudentDetail(true);
+    setLoadingHistory(true);
+    setErrorHistory(null);
+    try {
+      const history = await teacherApiService.getStudentInteractionHistory(teacherData.id, student.id);
+      setStudentHistory(history);
+    } catch (err) {
+      setErrorHistory('No se pudo cargar el historial de interacción.');
+      setStudentHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleCloseStudentDetail = () => {
+    setShowStudentDetail(false);
+    setSelectedStudent(null);
+    setStudentHistory([]);
+    setErrorHistory(null);
+  };
 
   // Mostrar estado de carga
   if (loading) {
@@ -204,7 +232,7 @@ function StudentManager({ teacherData, teacherStats }) {
                 </td>
                 <td>
                   <div className="action-buttons">
-                    <button className="action-btn" title="Ver perfil">
+                    <button className="action-btn" title="Ver perfil" onClick={() => handleViewStudent(student)}>
                       <FiEye />
                     </button>
                     <button className="action-btn" title="Enviar mensaje">
@@ -228,6 +256,60 @@ function StudentManager({ teacherData, teacherStats }) {
               : 'Aún no hay estudiantes matriculados en tus cursos.'
             }
           </p>
+        </div>
+      )}
+
+      {/* Modal de detalle de estudiante */}
+      {showStudentDetail && selectedStudent && (
+        <div className="modal-overlay" onClick={handleCloseStudentDetail}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Detalle del Estudiante</h3>
+              <button className="modal-close" onClick={handleCloseStudentDetail}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="student-detail-info">
+                <h4>{selectedStudent.name}</h4>
+                <p><strong>Email:</strong> {selectedStudent.email}</p>
+                <p><strong>Curso:</strong> {selectedStudent.courseName}</p>
+                <p><strong>Semestre:</strong> {selectedStudent.semester}</p>
+                <p><strong>Estado:</strong> <span className={`status-badge ${selectedStudent.status}`}>{selectedStudent.status}</span></p>
+                <p><strong>Progreso:</strong> {selectedStudent.progress.toFixed(1)}%</p>
+                <p><strong>Lecciones completadas:</strong> {selectedStudent.lessonsCompleted}</p>
+                <p><strong>Evaluaciones realizadas:</strong> {selectedStudent.evaluationsTaken}</p>
+                <p><strong>Promedio evaluaciones:</strong> {selectedStudent.averageScore.toFixed(1)}</p>
+              </div>
+              <div className="student-history-section">
+                <h4><FiClock /> Historial de Interacción</h4>
+                {loadingHistory ? (
+                  <div className="loading-history">Cargando historial...</div>
+                ) : errorHistory ? (
+                  <div className="error-history">{errorHistory}</div>
+                ) : studentHistory.length === 0 ? (
+                  <div className="empty-history">No hay interacciones registradas.</div>
+                ) : (
+                  <table className="history-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Acción</th>
+                        <th>Detalle</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {studentHistory.slice(0, 20).map((event, idx) => (
+                        <tr key={idx}>
+                          <td>{new Date(event.fecha).toLocaleString()}</td>
+                          <td>{event.accion}</td>
+                          <td>{event.detalle}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
