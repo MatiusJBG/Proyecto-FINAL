@@ -1,0 +1,360 @@
+.material-manager {
+    padding: 20px;
+    background: #1a1d23;
+    min-height: 100vh;
+    color: #fff;
+}
+
+.material-manager h2 {
+    color: #e94560;
+    margin-bottom: 30px;
+    font-size: 28px;
+    text-align: center;
+}
+
+.message {
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.message.success {
+    background: #2d5a2d;
+    color: #4ade80;
+    border: 1px solid #4ade80;
+}
+
+.message.error {
+    background: #5a2d2d;
+    color: #f87171;
+    border: 1px solid #f87171;
+}
+
+.selection-panel {
+    background: #23272f;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.select-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.select-group label {
+    font-weight: 600;
+    color: #e94560;
+    font-size: 14px;
+}
+
+.select-group select {
+    padding: 12px;
+    border: 2px solid #353b48;
+    border-radius: 8px;
+    background: #2b2f38;
+    color: #fff;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.select-group select:focus {
+    outline: none;
+    border-color: #e94560;
+}
+
+.select-group select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.content-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.form-section {
+    background: #23272f;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.form-section h3 {
+    color: #e94560;
+    margin-bottom: 20px;
+    font-size: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #bfc9d1;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+    padding: 12px;
+    border: 2px solid #353b48;
+    border-radius: 8px;
+    background: #2b2f38;
+    color: #fff;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #e94560;
+}
+
+.form-group input::placeholder {
+    color: #6b7280;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn-primary {
+    padding: 12px 24px;
+    background: #e94560;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex: 1;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #d63384;
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    padding: 12px 24px;
+    background: #6b7280;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #4b5563;
+}
+
+.materials-section {
+    background: #23272f;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.materials-section h3 {
+    color: #e94560;
+    margin-bottom: 20px;
+    font-size: 20px;
+}
+
+.materials-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.material-item {
+    background: #2b2f38;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #353b48;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.material-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.material-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
+.material-icon {
+    font-size: 32px;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #353b48;
+    border-radius: 10px;
+}
+
+.material-details h4 {
+    color: #fff;
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.material-details p {
+    color: #bfc9d1;
+    margin: 4px 0;
+    font-size: 14px;
+}
+
+.material-details a {
+    color: #e94560;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.material-details a:hover {
+    color: #d63384;
+    text-decoration: underline;
+}
+
+.material-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-edit {
+    padding: 8px 16px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-edit:hover {
+    background: #2563eb;
+}
+
+.btn-delete {
+    padding: 8px 16px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-delete:hover {
+    background: #dc2626;
+}
+
+.no-materials {
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+    padding: 40px 20px;
+}
+
+.select-leccion {
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+    padding: 40px 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .content-panel {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .selection-panel {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .material-manager {
+        padding: 15px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .material-item {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .material-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .material-manager h2 {
+        font-size: 24px;
+    }
+    
+    .form-section,
+    .materials-section {
+        padding: 20px;
+    }
+    
+    .material-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+} 

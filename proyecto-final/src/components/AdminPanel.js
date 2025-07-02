@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AdminPanel.css';
+import LogoutIcon from './LogoutIcon';
 import ContentManager from './admin/ContentManager';
 import MaterialManager from './admin/MaterialManager';
 import SearchManager from './admin/SearchManager';
@@ -206,15 +207,15 @@ function AdminPanel() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="admin-title">Panel de Administración</h2>
           <button
-            className="admin-btn"
-            style={{ background: '#e94560', color: '#fff', padding: '8px 18px', fontWeight: 'bold' }}
+            className="admin-btn logout-btn"
             onClick={() => {
               localStorage.clear();
               sessionStorage.clear();
               window.location.href = '/login';
             }}
           >
-            Cerrar sesión
+            <LogoutIcon style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            Cerrar Sesión
           </button>
         </div>
         <AdminTabs active={activeTab} setActive={setActiveTab} />
@@ -230,7 +231,9 @@ function AdminPanel() {
             setSelectedLeccion={setSelectedLeccion}
           />
         )}
-        {activeTab === 'materiales' && <MaterialManager data={data} setData={setData} />}
+        {activeTab === 'materiales' && <MaterialManager />}
+        {activeTab === 'busqueda' && <SearchManager />}
+        {activeTab === 'arboldecision' && <DecisionTreeManager />}
         {activeTab === 'evaluaciones' && <EvaluationManager data={data} setData={setData} />}
         {activeTab === 'crearusuario' && <CreateUser />}
         {activeTab === 'creardocente' && <CreateTeacher />}

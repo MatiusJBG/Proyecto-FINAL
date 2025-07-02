@@ -1,217 +1,432 @@
-import React, { useState } from 'react';
-import Modal from './Modal';
-import MaterialForm from './MaterialForm';
+import React, { useState, useEffect } from 'react';
+import './MaterialManager.css';
 
-function MaterialManager({ data, setData }) {
-  const [showMaterialForm, setShowMaterialForm] = useState(false);
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [pending, setPending] = useState({ cursoId: null, moduloId: null, leccionId: null, materialId: null });
-  const [confirmDelete, setConfirmDelete] = useState({ open: false, cursoId: null, moduloId: null, leccionId: null, materialId: null });
-
-  const agregarMaterial = (cursoId, moduloId, leccionId, material) => {
-    setData({
-      ...data,
-      cursos: data.cursos.map(c =>
-        c.id === cursoId
-          ? {
-              ...c,
-              modulos: c.modulos.map(m =>
-                m.id === moduloId
-                  ? {
-                      ...m,
-                      lecciones: m.lecciones.map(l =>
-                        l.id === leccionId
-                          ? { ...l, materiales: [...(l.materiales || []), { id: Date.now(), nombre: material.nombre }] }
-                          : l
-                      ),
-                    }
-                  : m
-              ),
-            }
-          : c
-      ),
+const MaterialManager = () => {
+    const [materiales, setMateriales] = useState([]);
+    const [lecciones, setLecciones] = useState([]);
+    const [cursos, setCursos] = useState([]);
+    const [modulos, setModulos] = useState([]);
+    const [selectedCurso, setSelectedCurso] = useState('');
+    const [selectedModulo, setSelectedModulo] = useState('');
+    const [selectedLeccion, setSelectedLeccion] = useState('');
+    const [formData, setFormData] = useState({
+        nombre: '',
+        tipo: 'documento',
+        url: '',
+        orden: 0,
+        duracion: null
     });
-    setShowMaterialForm(false);
-    setPending({ cursoId: null, moduloId: null, leccionId: null, materialId: null });
-  };
+    const [editingMaterial, setEditingMaterial] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
 
-  const editarMaterial = (cursoId, moduloId, leccionId, materialId, nuevoMaterial) => {
-    setData({
-      ...data,
-      cursos: data.cursos.map(c =>
-        c.id === cursoId
-          ? {
-              ...c,
-              modulos: c.modulos.map(m =>
-                m.id === moduloId
-                  ? {
-                      ...m,
-                      lecciones: m.lecciones.map(l =>
-                        l.id === leccionId
-                          ? {
-                              ...l,
-                              materiales: l.materiales.map(mat =>
-                                mat.id === materialId ? { ...mat, nombre: nuevoMaterial.nombre } : mat
-                              ),
-                            }
-                          : l
-                      ),
-                    }
-                  : m
-              ),
+    // Cargar cursos al iniciar
+    useEffect(() => {
+        cargarCursos();
+    }, []);
+
+    // Cargar módulos cuando se selecciona un curso
+    useEffect(() => {
+        if (selectedCurso) {
+            cargarModulos(selectedCurso);
+        }
+    }, [selectedCurso]);
+
+    // Cargar lecciones cuando se selecciona un módulo
+    useEffect(() => {
+        if (selectedModulo) {
+            cargarLecciones(selectedModulo);
+        }
+    }, [selectedModulo]);
+
+    // Cargar materiales cuando se selecciona una lección
+    useEffect(() => {
+        if (selectedLeccion) {
+            cargarMateriales(selectedLeccion);
+        }
+    }, [selectedLeccion]);
+
+    const cargarCursos = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/cursos');
+            const data = await response.json();
+            setCursos(data);
+        } catch (error) {
+            console.error('Error cargando cursos:', error);
+            setMessage('Error cargando cursos');
+        }
+    };
+
+    const cargarModulos = async (cursoId) => {
+        try {
+            const response = await fetch(`http://localhost:5000/api/cursos/${cursoId}/modulos`);
+            const data = await response.json();
+            setModulos(data);
+            setSelectedModulo('');
+            setSelectedLeccion('');
+        } catch (error) {
+            console.error('Error cargando módulos:', error);
+            setMessage('Error cargando módulos');
+        }
+    };
+
+    const cargarLecciones = async (moduloId) => {
+        try {
+            const response = await fetch(`http://localhost:5000/api/modulos/${moduloId}/lecciones`);
+            const data = await response.json();
+            setLecciones(data);
+            setSelectedLeccion('');
+        } catch (error) {
+            console.error('Error cargando lecciones:', error);
+            setMessage('Error cargando lecciones');
+        }
+    };
+
+    const cargarMateriales = async (leccionId) => {
+        try {
+            const response = await fetch(`http://localhost:5000/api/lecciones/${leccionId}/materiales`);
+            const data = await response.json();
+            setMateriales(data);
+        } catch (error) {
+            console.error('Error cargando materiales:', error);
+            setMessage('Error cargando materiales');
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const limpiarFormulario = () => {
+        setFormData({
+            nombre: '',
+            tipo: 'documento',
+            url: '',
+            orden: 0,
+            duracion: null
+        });
+        setEditingMaterial(null);
+    };
+
+    const crearMaterial = async (e) => {
+        e.preventDefault();
+        if (!selectedLeccion) {
+            setMessage('Debe seleccionar una lección');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await fetch('http://localhost:5000/api/materiales/crear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...formData,
+                    leccion_id: parseInt(selectedLeccion)
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                setMessage('Material creado exitosamente');
+                limpiarFormulario();
+                cargarMateriales(selectedLeccion);
+            } else {
+                setMessage(data.error || 'Error creando material');
             }
-          : c
-      ),
-    });
-    setShowEditForm(false);
-    setPending({ cursoId: null, moduloId: null, leccionId: null, materialId: null });
-  };
+        } catch (error) {
+            console.error('Error:', error);
+            setMessage('Error de conexión');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const eliminarMaterial = (cursoId, moduloId, leccionId, materialId) => {
-    setData({
-      ...data,
-      cursos: data.cursos.map(c =>
-        c.id === cursoId
-          ? {
-              ...c,
-              modulos: c.modulos.map(m =>
-                m.id === moduloId
-                  ? {
-                      ...m,
-                      lecciones: m.lecciones.map(l =>
-                        l.id === leccionId
-                          ? { ...l, materiales: l.materiales.filter(mat => mat.id !== materialId) }
-                          : l
-                      ),
-                    }
-                  : m
-              ),
+    const editarMaterial = (material) => {
+        setEditingMaterial(material);
+        setFormData({
+            nombre: material.nombre,
+            tipo: material.tipo,
+            url: material.url,
+            orden: material.orden,
+            duracion: material.duracion
+        });
+    };
+
+    const actualizarMaterial = async (e) => {
+        e.preventDefault();
+        if (!editingMaterial) return;
+
+        setLoading(true);
+        try {
+            const response = await fetch(`http://localhost:5000/api/materiales/${editingMaterial.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                setMessage('Material actualizado exitosamente');
+                limpiarFormulario();
+                cargarMateriales(selectedLeccion);
+            } else {
+                setMessage(data.error || 'Error actualizando material');
             }
-          : c
-      ),
-    });
-    setConfirmDelete({ open: false, cursoId: null, moduloId: null, leccionId: null, materialId: null });
-  };
+        } catch (error) {
+            console.error('Error:', error);
+            setMessage('Error de conexión');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  return (
-    <div className="admin-section">
-      <h3>Gestión de Materiales</h3>
+    const eliminarMaterial = async (materialId) => {
+        if (!window.confirm('¿Está seguro de eliminar este material?')) {
+            return;
+        }
 
-      <div style={{ width: '100%', overflowX: 'auto', marginBottom: 24 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', background: '#23272f', borderRadius: 10, boxShadow: '0 2px 12px #0002' }}>
-          <thead>
-            <tr style={{ background: '#1a1d23', color: '#e94560' }}>
-              <th style={{ padding: '12px 8px', minWidth: 180, textAlign: 'left' }}>Curso</th>
-              <th style={{ padding: '12px 8px', minWidth: 160, textAlign: 'left' }}>Módulo</th>
-              <th style={{ padding: '12px 8px', minWidth: 160, textAlign: 'left' }}>Lección</th>
-              <th style={{ padding: '12px 8px', minWidth: 160, textAlign: 'left' }}>Material</th>
-              <th style={{ padding: '12px 8px', minWidth: 120, textAlign: 'center' }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.cursos.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#bfc9d1', padding: 24 }}>No hay cursos registrados.</td></tr>
+        setLoading(true);
+        try {
+            const response = await fetch(`http://localhost:5000/api/materiales/${materialId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                setMessage('Material eliminado exitosamente');
+                cargarMateriales(selectedLeccion);
+            } else {
+                setMessage(data.error || 'Error eliminando material');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            setMessage('Error de conexión');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getTipoIcon = (tipo) => {
+        const iconos = {
+            'video': '🎥',
+            'documento': '📄',
+            'enlace': '🔗',
+            'presentacion': '📊',
+            'imagen': '🖼️'
+        };
+        return iconos[tipo] || '📁';
+    };
+
+    return (
+        <div className="material-manager">
+            <h2>Gestión de Materiales</h2>
+            
+            {message && (
+                <div className={`message ${message.includes('Error') ? 'error' : 'success'}`}>
+                    {message}
+                </div>
             )}
-            {data.cursos.map(curso => (
-              <React.Fragment key={curso.id}>
-                {curso.modulos.map(modulo => (
-                  <React.Fragment key={modulo.id}>
-                    {Array.isArray(modulo.lecciones) && modulo.lecciones.map(leccion => (
-                      <React.Fragment key={leccion.id}>
-                        {(leccion.materiales && leccion.materiales.length > 0) ? (
-                          leccion.materiales.map(mat => (
-                            <tr key={mat.id} style={{ background: '#2b2f38', borderBottom: '1px solid #353b48' }}>
-                              <td style={{ color: '#fff', fontWeight: 600 }}>{curso.nombre}</td>
-                              <td style={{ color: '#f1f1f1' }}>{modulo.nombre}</td>
-                              <td style={{ color: '#f1f1f1' }}>{leccion.nombre}</td>
-                              <td style={{ color: '#f1f1f1' }}>{mat.nombre}</td>
-                              <td style={{ textAlign: 'center' }}>
-                                <button className="admin-btn" style={{ marginRight: 6 }} onClick={() => {
-                                  setShowEditForm(true);
-                                  setPending({ cursoId: curso.id, moduloId: modulo.id, leccionId: leccion.id, materialId: mat.id, nombre: mat.nombre });
-                                }}>Editar</button>
-                                <button className="admin-btn" style={{ marginRight: 6 }} onClick={() => setConfirmDelete({ open: true, cursoId: curso.id, moduloId: modulo.id, leccionId: leccion.id, materialId: mat.id })}>Eliminar</button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr style={{ background: '#262a33' }}>
-                            <td style={{ color: '#fff', fontWeight: 600 }}>{curso.nombre}</td>
-                            <td style={{ color: '#f1f1f1' }}>{modulo.nombre}</td>
-                            <td style={{ color: '#f1f1f1' }}>{leccion.nombre}</td>
-                            <td style={{ color: '#bfc9d1', fontStyle: 'italic' }}>Sin materiales</td>
-                            <td style={{ textAlign: 'center' }}></td>
-                          </tr>
-                        )}
-                        <tr style={{ background: '#23272f' }}>
-                          <td colSpan={5} style={{ textAlign: 'right', padding: '6px 12px' }}>
-                            <button
-                              className="admin-btn"
-                              onClick={() => {
-                                setShowMaterialForm(true);
-                                setPending({ cursoId: curso.id, moduloId: modulo.id, leccionId: leccion.id, materialId: null });
-                              }}
-                            >+ Agregar Material</button>
-                          </td>
-                        </tr>
-                      </React.Fragment>
-                    ))}
-                  </React.Fragment>
-                ))}
-                {/* Si no hay módulos o lecciones, mostrar mensaje */}
-                {curso.modulos.length === 0 && (
-                  <tr style={{ background: '#23272f' }}>
-                    <td>{curso.nombre}</td>
-                    <td colSpan={4} style={{ color: '#bfc9d1', fontStyle: 'italic', padding: '8px 8px' }}>Sin módulos</td>
-                  </tr>
-                )}
-                {curso.modulos.map(modulo => (
-                  modulo.lecciones.length === 0 ? (
-                    <tr key={modulo.id + '-no-lecciones'} style={{ background: '#262a33' }}>
-                      <td>{curso.nombre}</td>
-                      <td>{modulo.nombre}</td>
-                      <td colSpan={3} style={{ color: '#bfc9d1', fontStyle: 'italic', padding: '8px 8px' }}>Sin lecciones</td>
-                    </tr>
-                  ) : null
-                ))}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
 
-      {/* Modal para agregar material */}
-      <Modal open={showMaterialForm} onClose={() => { setShowMaterialForm(false); setPending({ cursoId: null, moduloId: null, leccionId: null, materialId: null }); }}>
-        <MaterialForm
-          onAdd={material => agregarMaterial(pending.cursoId, pending.moduloId, pending.leccionId, material)}
-          onCancel={() => { setShowMaterialForm(false); setPending({ cursoId: null, moduloId: null, leccionId: null, materialId: null }); }}
-        />
-      </Modal>
+            <div className="selection-panel">
+                <div className="select-group">
+                    <label>Curso:</label>
+                    <select 
+                        value={selectedCurso} 
+                        onChange={(e) => setSelectedCurso(e.target.value)}
+                    >
+                        <option value="">Seleccionar curso</option>
+                        {cursos.map(curso => (
+                            <option key={curso.ID_Curso} value={curso.ID_Curso}>
+                                {curso.Nombre}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-      {/* Modal para editar material */}
-      <Modal open={showEditForm} onClose={() => { setShowEditForm(false); setPending({ cursoId: null, moduloId: null, leccionId: null, materialId: null }); }}>
-        <MaterialForm
-          initialName={pending.nombre}
-          onAdd={material => editarMaterial(pending.cursoId, pending.moduloId, pending.leccionId, pending.materialId, material)}
-          onCancel={() => { setShowEditForm(false); setPending({ cursoId: null, moduloId: null, leccionId: null, materialId: null }); }}
-        />
-      </Modal>
+                <div className="select-group">
+                    <label>Módulo:</label>
+                    <select 
+                        value={selectedModulo} 
+                        onChange={(e) => setSelectedModulo(e.target.value)}
+                        disabled={!selectedCurso}
+                    >
+                        <option value="">Seleccionar módulo</option>
+                        {modulos.map(modulo => (
+                            <option key={modulo.ID_Modulo} value={modulo.ID_Modulo}>
+                                {modulo.Nombre}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-      {/* Modal de confirmación de eliminación */}
-      <Modal open={confirmDelete.open} onClose={() => setConfirmDelete({ open: false, cursoId: null, moduloId: null, leccionId: null, materialId: null })}>
-        <div style={{ textAlign: 'center' }}>
-          <p>¿Estás seguro de que deseas eliminar este material?</p>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 20 }}>
-            <button
-              className="admin-btn"
-              onClick={() => eliminarMaterial(confirmDelete.cursoId, confirmDelete.moduloId, confirmDelete.leccionId, confirmDelete.materialId)}
-            >Eliminar</button>
-            <button className="admin-btn" onClick={() => setConfirmDelete({ open: false, cursoId: null, moduloId: null, leccionId: null, materialId: null })}>Cancelar</button>
-          </div>
+                <div className="select-group">
+                    <label>Lección:</label>
+                    <select 
+                        value={selectedLeccion} 
+                        onChange={(e) => setSelectedLeccion(e.target.value)}
+                        disabled={!selectedModulo}
+                    >
+                        <option value="">Seleccionar lección</option>
+                        {lecciones.map(leccion => (
+                            <option key={leccion.ID_Leccion} value={leccion.ID_Leccion}>
+                                {leccion.Nombre}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <div className="content-panel">
+                <div className="form-section">
+                    <h3>{editingMaterial ? 'Editar Material' : 'Crear Nuevo Material'}</h3>
+                    <form onSubmit={editingMaterial ? actualizarMaterial : crearMaterial}>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Nombre:</label>
+                                <input
+                                    type="text"
+                                    name="nombre"
+                                    value={formData.nombre}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Tipo:</label>
+                                <select
+                                    name="tipo"
+                                    value={formData.tipo}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="documento">Documento</option>
+                                    <option value="video">Video</option>
+                                    <option value="enlace">Enlace</option>
+                                    <option value="presentacion">Presentación</option>
+                                    <option value="imagen">Imagen</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>URL:</label>
+                                <input
+                                    type="url"
+                                    name="url"
+                                    value={formData.url}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Orden:</label>
+                                <input
+                                    type="number"
+                                    name="orden"
+                                    value={formData.orden}
+                                    onChange={handleInputChange}
+                                    min="0"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Duración (minutos):</label>
+                                <input
+                                    type="number"
+                                    name="duracion"
+                                    value={formData.duracion || ''}
+                                    onChange={handleInputChange}
+                                    min="0"
+                                    placeholder="Solo para videos"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-actions">
+                            <button 
+                                type="submit" 
+                                disabled={loading || !selectedLeccion}
+                                className="btn-primary"
+                            >
+                                {loading ? 'Procesando...' : (editingMaterial ? 'Actualizar' : 'Crear')}
+                            </button>
+                            {editingMaterial && (
+                                <button 
+                                    type="button" 
+                                    onClick={limpiarFormulario}
+                                    className="btn-secondary"
+                                >
+                                    Cancelar
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                </div>
+
+                <div className="materials-section">
+                    <h3>Materiales de la Lección</h3>
+                    {selectedLeccion ? (
+                        <div className="materials-list">
+                            {materiales.length === 0 ? (
+                                <p className="no-materials">No hay materiales en esta lección</p>
+                            ) : (
+                                materiales.map(material => (
+                                    <div key={material.id} className="material-item">
+                                        <div className="material-info">
+                                            <span className="material-icon">
+                                                {getTipoIcon(material.tipo)}
+                                            </span>
+                                            <div className="material-details">
+                                                <h4>{material.nombre}</h4>
+                                                <p>Tipo: {material.tipo}</p>
+                                                <p>Orden: {material.orden}</p>
+                                                {material.duracion && (
+                                                    <p>Duración: {material.duracion} min</p>
+                                                )}
+                                                <a href={material.url} target="_blank" rel="noopener noreferrer">
+                                                    Ver recurso
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div className="material-actions">
+                                            <button 
+                                                onClick={() => editarMaterial(material)}
+                                                className="btn-edit"
+                                            >
+                                                Editar
+                                            </button>
+                                            <button 
+                                                onClick={() => eliminarMaterial(material.id)}
+                                                className="btn-delete"
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    ) : (
+                        <p className="select-leccion">Seleccione una lección para ver sus materiales</p>
+                    )}
+                </div>
+            </div>
         </div>
-      </Modal>
-    </div>
-  );
-}
+    );
+};
 
 export default MaterialManager;

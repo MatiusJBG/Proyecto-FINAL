@@ -5,6 +5,8 @@ function AdminTabs({ active, setActive }) {
   const tabs = [
     { key: 'contenido', label: 'Contenido' },
     { key: 'materiales', label: 'Materiales' },
+    { key: 'busqueda', label: 'Búsqueda' },
+    { key: 'arboldecision', label: 'Árbol de Decisión' },
     { key: 'evaluaciones', label: 'Evaluaciones' },
     { key: 'crearusuario', label: 'Crear Alumno' },
     { key: 'creardocente', label: 'Crear Docente' },
