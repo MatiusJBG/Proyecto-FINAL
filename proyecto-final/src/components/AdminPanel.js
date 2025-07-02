@@ -147,7 +147,20 @@ function AdminPanel() {
   return (
     <div className="admin-panel-container">
       <div className="admin-panel">
-        <h2 className="admin-title">Panel de Administración</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 className="admin-title">Panel de Administración</h2>
+          <button
+            className="admin-btn"
+            style={{ background: '#e94560', color: '#fff', padding: '8px 18px', fontWeight: 'bold' }}
+            onClick={() => {
+              localStorage.clear();
+              sessionStorage.clear();
+              window.location.href = '/login';
+            }}
+          >
+            Cerrar sesión
+          </button>
+        </div>
         <AdminTabs active={activeTab} setActive={setActiveTab} />
         {activeTab === 'contenido' && (
           <ContentManager

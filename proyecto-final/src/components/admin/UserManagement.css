@@ -1,0 +1,12 @@
+.admin-user-btns {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.admin-user-btns .admin-btn {
+  min-width: 120px;
+  text-align: center;
+}

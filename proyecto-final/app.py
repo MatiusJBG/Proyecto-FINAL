@@ -1,3 +1,5 @@
+
+
 from flask import Flask, jsonify, request
 from db_connect import get_connection
 from flask_cors import CORS
@@ -5,13 +7,88 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+# Endpoint para obtener todos los cursos
+@app.route('/api/cursos', methods=['GET'])
+def get_cursos():
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM Cursos')
+        cursos = cursor.fetchall()
+        return jsonify(cursos)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para crear un curso
+@app.route('/api/cursos', methods=['POST'])
+def crear_curso():
+    data = request.json
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion', '')
+    estado = data.get('estado', 'activo')
+    imagen_url = data.get('imagen_url', None)
+    duracion_estimada = data.get('duracion_estimada', None)
+    id_profesor = data.get('id_profesor', None)
+    if not nombre:
+        return jsonify({'error': 'El nombre es obligatorio'}), 400
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO Cursos (Nombre, Descripcion, Estado, Imagen_url, Duracion_estimada, ID_Profesor)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        ''', (nombre, descripcion, estado, imagen_url, duracion_estimada, id_profesor))
+        conn.commit()
+        return jsonify({'message': 'Curso creado correctamente'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para obtener todos los estudiantes
+@app.route('/api/estudiantes', methods=['GET'])
+def get_estudiantes():
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM Estudiantes')
+        estudiantes = cursor.fetchall()
+        return jsonify(estudiantes)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para obtener todos los profesores
+@app.route('/api/profesores', methods=['GET'])
+def get_profesores():
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM Profesores')
+        profesores = cursor.fetchall()
+        return jsonify(profesores)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
 @app.route('/api/estudiantes', methods=['POST'])
 def crear_estudiante():
     data = request.json
     nombre = data.get('nombre')
     correo = data.get('correo_electronico')
     contrasena = data.get('contrasena')
-    carrera = data.get('carrera', 'Por definir')
     semestre = data.get('semestre', 1)
     fecha_nacimiento = data.get('fecha_nacimiento', '2000-01-01')
     if not nombre or not correo or not contrasena:
@@ -21,8 +98,8 @@ def crear_estudiante():
         return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
     try:
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO Estudiantes (Nombre, Correo_electronico, Contrasena, Carrera, Semestre, Fecha_nacimiento) VALUES (%s, %s, %s, %s, %s, %s)',
-                       (nombre, correo, contrasena, carrera, semestre, fecha_nacimiento))
+        cursor.execute('INSERT INTO Estudiantes (Nombre, Correo_electronico, Contrasena, Semestre, Fecha_nacimiento) VALUES (%s, %s, %s, %s, %s)',
+                       (nombre, correo, contrasena, semestre, fecha_nacimiento))
         conn.commit()
         return jsonify({'message': 'Estudiante creado'}), 201
     except Exception as e:

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import StudentManager from './StudentManager';
 import TeacherManager from './TeacherManager';
+import './UserManagement.css';
 
 function UserManagement() {
   const [active, setActive] = useState('alumnos');
   return (
     <div className="admin-section">
       <h3>Gestión de Usuarios</h3>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 18 }}>
+      <div className="admin-user-btns">
         <button className={`admin-btn${active === 'alumnos' ? ' active' : ''}`} onClick={() => setActive('alumnos')}>
           Alumnos
         </button>

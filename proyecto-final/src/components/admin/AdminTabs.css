@@ -3,6 +3,8 @@
   gap: 0.5rem;
   margin-bottom: 2rem;
   justify-content: center;
+  align-items: flex-end;
+  flex-wrap: wrap;
 }
 .admin-tabs button {
   background: #181c24;
@@ -15,6 +17,11 @@
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
   outline: none;
+  min-width: 170px;
+  text-align: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
 }
 .admin-tabs button.active {
   background: linear-gradient(90deg, #e94560 0%, #9036e0 100%);

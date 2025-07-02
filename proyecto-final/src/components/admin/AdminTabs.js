@@ -6,7 +6,7 @@ function AdminTabs({ active, setActive }) {
     { key: 'contenido', label: 'Contenido' },
     { key: 'materiales', label: 'Materiales' },
     { key: 'evaluaciones', label: 'Evaluaciones' },
-    { key: 'crearusuario', label: 'Crear Usuario' },
+    { key: 'crearusuario', label: 'Crear Alumno' },
     { key: 'creardocente', label: 'Crear Docente' },
     { key: 'recomendaciones', label: 'Recomendaciones' },
     { key: 'gestionusuarios', label: 'Gestión de Usuarios' },
