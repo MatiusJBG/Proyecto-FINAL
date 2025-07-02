@@ -204,7 +204,7 @@ export default function StudentDashboard({ onLogout, userData }) {
   if (loading) {
     return (
       <div className="dashboard-container">
-        <Sidebar onLogout={onLogout} />
+        <Sidebar onLogout={onLogout} userData={userData} />
         <main className="dashboard-main">
           <div className="loading">Cargando datos del estudiante...</div>
         </main>
@@ -215,7 +215,7 @@ export default function StudentDashboard({ onLogout, userData }) {
   if (error) {
     return (
       <div className="dashboard-container">
-        <Sidebar onLogout={onLogout} />
+        <Sidebar onLogout={onLogout} userData={userData} />
         <main className="dashboard-main">
           <div className="error">Error: {error}</div>
         </main>
@@ -252,7 +252,7 @@ export default function StudentDashboard({ onLogout, userData }) {
 
   return (
     <div className="dashboard-container">
-      <Sidebar onLogout={onLogout} />
+      <Sidebar onLogout={onLogout} userData={userData} />
       <main className="dashboard-main">
         <UserHeader userData={userData} />
         
