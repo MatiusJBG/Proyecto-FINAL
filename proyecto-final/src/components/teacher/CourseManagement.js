@@ -136,7 +136,7 @@ function CourseManagement({ course, onBack }) {
         };
         
         // Llamada al API para crear lección
-        await teacherApiService.createLesson(lessonData);
+        await teacherApiService.createLesson(selectedModule.ID_Modulo, lessonData);
         
         // Recargar módulos
         const modulesData = await teacherApiService.getCourseModules(course.id);
