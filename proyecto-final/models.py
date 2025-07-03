@@ -157,12 +157,12 @@ class Modulo(NodoContenido):
 
 class Examen:
     """Clase para representar un examen asociado a una lección o módulo"""
-    def __init__(self, id: int, titulo: str, id_leccion: int = None, id_modulo: int = None, id_profesor: int = None, ponderacion: float = 1.0):
+    def __init__(self, id: int, titulo: str, id_leccion: Optional[int] = None, id_modulo: Optional[int] = None, id_profesor: Optional[int] = None, ponderacion: float = 1.0):
         self.id = id
         self.titulo = titulo
-        self.id_leccion = id_leccion
-        self.id_modulo = id_modulo
-        self.id_profesor = id_profesor
+        self.id_leccion = id_leccion if id_leccion is not None else -1
+        self.id_modulo = id_modulo if id_modulo is not None else -1
+        self.id_profesor = id_profesor if id_profesor is not None else -1
         self.preguntas: list[Pregunta] = []
         self.ponderacion = ponderacion
         self.fecha_creacion = datetime.now()
@@ -200,7 +200,7 @@ class Pregunta:
 
 class RespuestaEstudiante:
     """Respuesta de un estudiante a una pregunta"""
-    def __init__(self, id_estudiante: int, id_examen: int, id_pregunta: int, respuesta: str, fecha_respuesta: datetime = None):
+    def __init__(self, id_estudiante: int, id_examen: int, id_pregunta: int, respuesta: str, fecha_respuesta: Optional[datetime] = None):
         self.id_estudiante = id_estudiante
         self.id_examen = id_examen
         self.id_pregunta = id_pregunta
@@ -218,7 +218,7 @@ class RespuestaEstudiante:
 
 class CalificacionExamen:
     """Calificación de un estudiante en un examen"""
-    def __init__(self, id_estudiante: int, id_examen: int, puntaje_obtenido: float, puntaje_maximo: float, detalles: dict = None):
+    def __init__(self, id_estudiante: int, id_examen: int, puntaje_obtenido: float, puntaje_maximo: float, detalles: Optional[dict] = None):
         self.id_estudiante = id_estudiante
         self.id_examen = id_examen
         self.puntaje_obtenido = puntaje_obtenido
@@ -274,7 +274,8 @@ class Leccion(NodoContenido):
             'duracion_estimada': self.duracion_estimada,
             'id_modulo': self.id_modulo,
             'es_obligatoria': self.es_obligatoria,
-            'recursos': [recurso.to_dict() for recurso in self.recursos]
+            'recursos': [recurso.to_dict() for recurso in self.recursos],
+            'evaluaciones': getattr(self, 'evaluaciones', [])
         })
         return base_dict
 

@@ -10,11 +10,18 @@ from models import (GestorContenido, GestorMateriales, Curso, Modulo, Leccion, R
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
+gestor_contenido = GestorContenido()
+
 @app.after_request
 def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
+    origin = request.headers.get('Origin')
+    if origin:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    else:
+        response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response
 
 # ...existing code...
@@ -260,54 +267,27 @@ def obtener_evaluaciones_leccion(leccion_id):
 def responder_evaluacion(evaluacion_id):
     data = request.json
     estudiante_id = data.get('estudiante_id')
-    respuestas = data.get('respuestas')  # Lista de {id_pregunta, respuesta}
+    respuestas = data.get('respuestas')  # Lista de {id_pregunta, id_opcion}
     if not estudiante_id or not respuestas:
         return jsonify({'error': 'Datos incompletos'}), 400
+
     conn = get_connection()
     if not conn:
         return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+
     try:
-        cursor = conn.cursor(dictionary=True)
-        # Obtener preguntas y respuestas correctas
-        cursor.execute('SELECT ID_Pregunta, Puntaje, Respuesta_correcta FROM Preguntas WHERE ID_Evaluacion = %s', (evaluacion_id,))
-        preguntas = {row['ID_Pregunta']: row for row in cursor.fetchall()}
-        puntaje_obtenido = 0.0
-        puntaje_maximo = 0.0
-        detalles = []
+        cursor = conn.cursor()
         for r in respuestas:
             id_pregunta = r.get('id_pregunta')
-            respuesta = r.get('respuesta', '')
-            preg = preguntas.get(id_pregunta)
-            if not preg:
-                continue
-            puntaje_maximo += float(preg['Puntaje'])
-            es_correcta = (respuesta.strip().lower() == (preg['Respuesta_correcta'] or '').strip().lower())
-            if es_correcta:
-                puntaje_obtenido += float(preg['Puntaje'])
-            detalles.append({
-                'id_pregunta': id_pregunta,
-                'respuesta_estudiante': respuesta,
-                'respuesta_correcta': preg['Respuesta_correcta'],
-                'puntaje': preg['Puntaje'],
-                'es_correcta': es_correcta
-            })
-            # Registrar respuesta individual
+            id_opcion = r.get('id_opcion')
+            if not id_pregunta or not id_opcion:
+                continue  # O puedes retornar error si prefieres
             cursor.execute('''
-                INSERT INTO Respuestas_Estudiante (ID_Estudiante, ID_Evaluacion, ID_Pregunta, Respuesta, Fecha_respuesta)
-                VALUES (%s, %s, %s, %s, NOW())
-            ''', (estudiante_id, evaluacion_id, id_pregunta, respuesta))
-        # Registrar resultado global
-        cursor.execute('''
-            INSERT INTO Resultados_Evaluaciones (ID_Estudiante, ID_Evaluacion, Puntaje, Tiempo_utilizado)
-            VALUES (%s, %s, %s, %s)
-        ''', (estudiante_id, evaluacion_id, puntaje_obtenido, 0))
+                INSERT INTO respuestas_estudiantes (id_estudiante, id_pregunta, id_opcion, fecha_respuesta)
+                VALUES (%s, %s, %s, NOW())
+            ''', (estudiante_id, id_pregunta, id_opcion))
         conn.commit()
-        comprobante = {
-            'puntaje_obtenido': puntaje_obtenido,
-            'puntaje_maximo': puntaje_maximo,
-            'detalles': detalles
-        }
-        return jsonify({'message': 'Respuestas registradas', 'comprobante': comprobante}), 201
+        return jsonify({'message': 'Respuestas registradas correctamente'}), 201
     except Exception as e:
         conn.rollback()
         return jsonify({'error': str(e)}), 500
@@ -532,8 +512,21 @@ def get_estadisticas_estudiante(estudiante_id):
             LEFT JOIN Resultados_Evaluaciones re ON e.ID_Estudiante = re.ID_Estudiante
             WHERE e.ID_Estudiante = %s
         ''', (estudiante_id,))
-        
         estadisticas = cursor.fetchone()
+        # Si no hay datos, devolver ceros por defecto
+        if not estadisticas or estadisticas is None:
+            estadisticas = {
+                'total_cursos': 0,
+                'promedio_progreso': 0,
+                'lecciones_completadas': 0,
+                'evaluaciones_realizadas': 0,
+                'promedio_puntajes': 0,
+                'evaluaciones_aprobadas': 0
+            }
+        # Reemplazar None por 0 en los campos numéricos
+        for k in estadisticas:
+            if estadisticas[k] is None:
+                estadisticas[k] = 0
         return jsonify(estadisticas)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1698,6 +1691,118 @@ def get_progreso_estudiante_profesor(profesor_id, estudiante_id):
 @app.route('/')
 def home():
     return '<h2>API Flask corriendo correctamente</h2>'
+
+@app.route('/api/cursos', methods=['GET'])
+def get_cursos():
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT c.ID_Curso, c.Nombre, c.Descripcion, c.Duracion_estimada, c.Estado, 
+                   p.Nombre as Profesor_Nombre, c.ID_Profesor
+            FROM Cursos c
+            LEFT JOIN Profesores p ON c.ID_Profesor = p.ID_Profesor
+            ORDER BY c.ID_Curso
+        ''')
+        cursos = cursor.fetchall()
+        return jsonify(cursos)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+def cargar_estructura_desde_bd():
+    conn = get_connection()
+    if not conn:
+        print('No se pudo conectar a la base de datos para cargar la estructura.')
+        return
+    try:
+        cursor = conn.cursor(dictionary=True)
+        # Obtener todos los cursos
+        cursor.execute('SELECT * FROM Cursos')
+        cursos = cursor.fetchall()
+        for c in cursos:
+            curso = Curso(
+                id=c['ID_Curso'],
+                nombre=c['Nombre'],
+                descripcion=c.get('Descripcion', ''),
+                duracion_estimada=c.get('Duracion_estimada', 0),
+                id_profesor=c.get('ID_Profesor')
+            )
+            # Obtener módulos de este curso
+            cursor.execute('SELECT * FROM Modulos WHERE ID_Curso = %s', (c['ID_Curso'],))
+            modulos = cursor.fetchall()
+            for m in modulos:
+                modulo = Modulo(
+                    id=m['ID_Modulo'],
+                    nombre=m['Nombre'],
+                    descripcion=m.get('Descripcion', ''),
+                    duracion_estimada=m.get('Duracion_estimada', 0),
+                    id_curso=m['ID_Curso']
+                )
+                # Obtener lecciones de este módulo
+                cursor.execute('SELECT * FROM Lecciones WHERE ID_Modulo = %s', (m['ID_Modulo'],))
+                lecciones = cursor.fetchall()
+                for l in lecciones:
+                    leccion = Leccion(
+                        id=l['ID_Leccion'],
+                        nombre=l['Nombre'],
+                        descripcion=l.get('Descripcion', ''),
+                        contenido=l.get('Contenido', ''),
+                        duracion_estimada=l.get('Duracion_estimada', 0),
+                        id_modulo=l['ID_Modulo'],
+                        es_obligatoria=bool(l.get('Es_obligatoria', 1))
+                    )
+                    # Obtener evaluaciones de esta lección
+                    cursor.execute('SELECT * FROM Evaluaciones WHERE ID_Leccion = %s', (l['ID_Leccion'],))
+                    evaluaciones = cursor.fetchall()
+                    leccion.evaluaciones = [
+                        {
+                            'id': ev['ID_Evaluacion'],
+                            'nombre': ev['Nombre'],
+                            'descripcion': ev.get('Descripcion', ''),
+                            'puntaje_aprobacion': ev.get('Puntaje_aprobacion', 0),
+                            'max_intentos': ev.get('Max_intentos', 0)
+                        }
+                        for ev in evaluaciones
+                    ]
+                    modulo.agregar_leccion(leccion)
+                curso.agregar_modulo(modulo)
+            gestor_contenido.agregar_curso(curso)
+    except Exception as e:
+        print(f'Error cargando estructura desde la base de datos: {e}')
+    finally:
+        conn.close()
+
+# Llamar a la función al iniciar el backend
+cargar_estructura_desde_bd()
+
+# Endpoint para obtener los cursos en los que está matriculado un estudiante
+@app.route('/api/estudiante/<int:estudiante_id>/cursos', methods=['GET'])
+def get_cursos_estudiante(estudiante_id):
+    """Obtiene todos los cursos en los que está matriculado un estudiante"""
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT c.ID_Curso, c.Nombre, c.Descripcion, c.Duracion_estimada, c.Estado, 
+                   p.Nombre as Profesor_Nombre, c.ID_Profesor, m.Fecha_matricula, m.Progreso_total
+            FROM Matriculas m
+            JOIN Cursos c ON m.ID_Curso = c.ID_Curso
+            LEFT JOIN Profesores p ON c.ID_Profesor = p.ID_Profesor
+            WHERE m.ID_Estudiante = %s
+            ORDER BY m.Fecha_matricula DESC
+        ''', (estudiante_id,))
+        cursos = cursor.fetchall()
+        return jsonify(cursos)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True)
