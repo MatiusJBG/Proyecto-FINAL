@@ -8,7 +8,7 @@ from models import (GestorContenido, GestorMateriales, Curso, Modulo, Leccion, R
                    GestorEstudiantesProfesor, Profesor, Evaluacion, ResultadoEvaluacion, Matricula)
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app)  # Habilita CORS globalmente para todas las rutas y orígenes
 
 gestor_contenido = GestorContenido()
 
