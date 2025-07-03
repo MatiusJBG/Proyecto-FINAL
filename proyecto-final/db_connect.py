@@ -8,11 +8,16 @@ load_dotenv()
 
 def get_connection():
     try:
+        host = os.getenv('DB_HOST', 'localhost')
+        user = os.getenv('DB_USER', 'root')
+        password = os.getenv('DB_PASSWORD', '')
+        database = os.getenv('DB_NAME', '')
+        print(f"Intentando conectar a MySQL con: host={host}, user={user}, password={'*' * len(password)}, database={database}")
         connection = mysql.connector.connect(
-            host=os.getenv('DB_HOST', 'localhost'),
-            user=os.getenv('DB_USER', 'root'),
-            password=os.getenv('DB_PASSWORD', ''),
-            database=os.getenv('DB_NAME', '')
+            host=host,
+            user=user,
+            password=password,
+            database=database
         )
         if connection.is_connected():
             print('Conexión exitosa a la base de datos')
