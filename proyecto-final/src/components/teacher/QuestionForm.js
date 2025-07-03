@@ -22,8 +22,8 @@ function QuestionForm({ onSave }) {
     setError(null);
     onSave({
       Enunciado: enunciado,
-      Tipo: 'opcion_multiple',
-      Opciones: JSON.stringify(opciones),
+      Tipo: 'seleccion_multiple',
+      Opciones: opciones, // Enviar como array, no como JSON string
       Respuesta_correcta: opciones[respuestaCorrecta],
     });
     setEnunciado('');

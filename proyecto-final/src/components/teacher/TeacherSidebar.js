@@ -1,12 +1,11 @@
 import React from 'react';
-import { FiBook, FiUsers, FiFileText, FiBarChart2, FiLogOut } from 'react-icons/fi';
+import { FiBook, FiUsers, FiBarChart2, FiLogOut } from 'react-icons/fi';
 import './TeacherSidebar.css';
 
 function TeacherSidebar({ active, setActive, onLogout }) {
   const sections = [
     { key: 'courses', label: 'Cursos', icon: <FiBook /> },
     { key: 'students', label: 'Estudiantes', icon: <FiUsers /> },
-    { key: 'evaluations', label: 'Evaluaciones', icon: <FiFileText /> },
     { key: 'analytics', label: 'Analíticas', icon: <FiBarChart2 /> },
   ];
   return (

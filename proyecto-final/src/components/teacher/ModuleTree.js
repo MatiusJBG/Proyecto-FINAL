@@ -26,8 +26,14 @@ function ModuleTree({ courseId }) {
           const lessons = await teacherApiService.getModuleLessons(mod.ID_Modulo);
           // Para cada lección, obtener evaluaciones
           const lessonsWithEvals = await Promise.all(lessons.map(async (lesson) => {
-            const evals = await teacherApiService.getModuleLessons ? await teacherApiService.getModuleLessons(lesson.ID_Leccion) : [];
-            return { ...lesson, evaluaciones: evals };
+            try {
+              // Intentar obtener evaluaciones de la lección
+              const evals = await teacherApiService.makeRequest(`/lecciones/${lesson.ID_Leccion}/evaluaciones`);
+              return { ...lesson, evaluaciones: evals || [] };
+            } catch (err) {
+              console.log(`No se pudieron cargar evaluaciones para lección ${lesson.ID_Leccion}:`, err);
+              return { ...lesson, evaluaciones: [] };
+            }
           }));
           return { ...mod, lecciones: lessonsWithEvals };
         }));
@@ -78,11 +84,23 @@ function ModuleTree({ courseId }) {
   // Guardar pregunta en la BD
   const handleSaveQuestion = async (evaluationId, questionData) => {
     try {
+      console.log('Guardando pregunta para evaluación:', evaluationId);
+      console.log('Datos de la pregunta:', questionData);
+      
+      if (!evaluationId || evaluationId === 'undefined') {
+        setError('Error: ID de evaluación no válido');
+        return;
+      }
+      
       await teacherApiService.createQuestion(evaluationId, questionData);
-      // Puedes recargar preguntas si lo deseas
       setShowQuestionForm({});
+      // Recargar preguntas después de agregar una nueva
+      if (window.refreshQuestions) {
+        window.refreshQuestions();
+      }
     } catch (err) {
-      setError('No se pudo guardar la pregunta.');
+      console.error('Error al guardar pregunta:', err);
+      setError(`No se pudo guardar la pregunta: ${err.message}`);
     }
   };
 
@@ -123,7 +141,12 @@ function ModuleTree({ courseId }) {
                           {showQuestionForm[ev.ID_Evaluacion] && (
                             <QuestionForm onSave={q => handleSaveQuestion(ev.ID_Evaluacion, q)} />
                           )}
-                          <QuestionList evaluationId={ev.ID_Evaluacion} />
+                          <QuestionList 
+                            evaluationId={ev.ID_Evaluacion} 
+                            onQuestionAdded={(refreshFn) => {
+                              window.refreshQuestions = refreshFn;
+                            }}
+                          />
                         </li>
                       )) : <li>No hay evaluaciones</li>}
                     </ul>

@@ -3,7 +3,6 @@ import TeacherSidebar from './TeacherSidebar';
 import TeacherHeader from './TeacherHeader';
 import TeacherCourses from './TeacherCourses';
 import TeacherStudents from './TeacherStudents';
-import TeacherEvaluations from './TeacherEvaluations';
 import TeacherAnalytics from './TeacherAnalytics';
 import teacherApiService from '../../services/teacherApi';
 import './TeacherDashboard.css';
@@ -52,7 +51,6 @@ function TeacherDashboard({ onLogout, userData }) {
         <div className="teacher-dashboard-content">
           {activeSection === 'courses' && <TeacherCourses teacherId={teacherData.id} />}
           {activeSection === 'students' && <TeacherStudents teacherId={teacherData.id} />}
-          {activeSection === 'evaluations' && <TeacherEvaluations teacherId={teacherData.id} />}
           {activeSection === 'analytics' && <TeacherAnalytics teacherId={teacherData.id} stats={teacherStats} />}
         </div>
       </main>

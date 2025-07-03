@@ -147,7 +147,7 @@ class TeacherApiService {
     return this.makeRequest('/cursos');
   }
 
-  // Obtener módulos de un curso
+  // Obtener módulos de un curso con lecciones y evaluaciones
   async getCourseModules(courseId) {
     return this.makeRequest(`/cursos/${courseId}/modulos`);
   }
@@ -162,6 +162,13 @@ class TeacherApiService {
     return this.makeRequest(`/cursos/${courseId}/modulos`, {
       method: 'POST',
       body: JSON.stringify(moduleData),
+    });
+  }
+
+  // Eliminar un módulo
+  async deleteModule(moduleId) {
+    return this.makeRequest(`/modulos/${moduleId}`, {
+      method: 'DELETE',
     });
   }
 
@@ -186,6 +193,41 @@ class TeacherApiService {
     return this.makeRequest(`/modulos/${moduleId}/evaluaciones`, {
       method: 'POST',
       body: JSON.stringify(evaluationData),
+    });
+  }
+
+  // Obtener evaluaciones de una lección
+  async getLessonEvaluations(lessonId) {
+    return this.makeRequest(`/lecciones/${lessonId}/evaluaciones`);
+  }
+
+  // Actualizar una evaluación
+  async updateEvaluation(evaluationId, evaluationData) {
+    return this.makeRequest(`/evaluaciones/${evaluationId}`, {
+      method: 'PUT',
+      body: JSON.stringify(evaluationData),
+    });
+  }
+
+  // Eliminar una evaluación
+  async deleteEvaluation(evaluationId) {
+    return this.makeRequest(`/evaluaciones/${evaluationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Actualizar una lección
+  async updateLesson(lessonId, lessonData) {
+    return this.makeRequest(`/lecciones/${lessonId}`, {
+      method: 'PUT',
+      body: JSON.stringify(lessonData),
+    });
+  }
+
+  // Eliminar una lección
+  async deleteLesson(lessonId) {
+    return this.makeRequest(`/lecciones/${lessonId}`, {
+      method: 'DELETE',
     });
   }
 
