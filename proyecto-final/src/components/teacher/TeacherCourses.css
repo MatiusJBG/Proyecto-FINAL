@@ -1,0 +1,21 @@
+.teacher-courses {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.teacher-courses h3 {
+  margin-top: 0;
+  color: #232946;
+}
+.teacher-courses ul {
+  list-style: none;
+  padding: 0;
+}
+.teacher-courses li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.teacher-courses li:last-child {
+  border-bottom: none;
+}

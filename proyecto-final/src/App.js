@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './App.css';
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
-import TeacherPanel from './components/TeacherPanel';
+import TeacherDashboard from './components/teacher/TeacherDashboard';
 import { StudentDashboard } from './components/student';
 
 function App() {
@@ -29,7 +29,7 @@ function App() {
       case 'admin':
         return <AdminPanel onLogout={handleLogout} />;
       case 'teacher':
-        return <TeacherPanel onLogout={handleLogout} userData={userData} />;
+        return <TeacherDashboard onLogout={handleLogout} userData={userData} />;
       case 'student':
         return <StudentDashboard onLogout={handleLogout} userData={userData} />;
       default:

@@ -1,0 +1,38 @@
+.module-tree {
+  margin-top: 2rem;
+}
+.module-block {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  background: #fafbfc;
+}
+.module-header {
+  padding: 1rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  background: #f0f1f6;
+  border-bottom: 1px solid #e0e0e0;
+}
+.module-content {
+  padding: 1rem 2rem;
+}
+.lesson-form, .eval-form {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.lesson-form input, .eval-form input {
+  padding: 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.lesson-form button, .eval-form button {
+  padding: 0.4rem 1rem;
+  background: #232946;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}

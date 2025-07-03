@@ -1,3 +1,5 @@
+// Archivo eliminado. Reemplazado por TeacherAnalytics.js
+// Archivo obsoleto. Reemplazado por TeacherAnalytics.js
 import React, { useEffect, useState } from 'react';
 import { FiTrendingUp, FiUsers, FiBook, FiBarChart2, FiClock } from 'react-icons/fi';
 import teacherApiService from '../../services/teacherApi';

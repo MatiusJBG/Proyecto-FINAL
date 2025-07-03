@@ -1,3 +1,5 @@
+// Archivo eliminado. Reemplazado por TeacherCourses.js
+// Archivo obsoleto. Reemplazado por TeacherCourses.js
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit, FiTrash2, FiUsers, FiTrendingUp, FiBook, FiClock } from 'react-icons/fi';
 import './CourseManager.css';

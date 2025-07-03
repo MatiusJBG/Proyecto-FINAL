@@ -6,6 +6,27 @@ class TeacherApiService {
     this.baseURL = API_BASE_URL;
   }
 
+  // (definición única de makeRequest más abajo)
+
+  // ...existing code...
+
+  // Crear una pregunta de opción múltiple para una evaluación
+  async createQuestion(evaluationId, questionData) {
+    // questionData: { Enunciado, Tipo, Opciones, Respuesta_correcta }
+    return this.makeRequest(`/evaluaciones/${evaluationId}/preguntas`, {
+      method: 'POST',
+      body: JSON.stringify(questionData),
+    });
+  }
+
+
+  // Eliminar una pregunta de una evaluación
+  async deleteQuestion(questionId) {
+    return this.makeRequest(`/preguntas/${questionId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Función helper para hacer peticiones HTTP
   async makeRequest(endpoint, options = {}) {
     try {
@@ -242,6 +263,7 @@ class TeacherApiService {
       },
     };
   }
+  // (definición única de createQuestion ya incluida arriba)
 }
 
 // Crear una instancia singleton del servicio

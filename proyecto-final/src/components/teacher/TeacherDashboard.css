@@ -1,0 +1,22 @@
+/* Estilos base para el dashboard del profesor */
+.teacher-dashboard-container {
+  display: flex;
+  height: 100vh;
+  background: #f7f8fa;
+}
+.teacher-dashboard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.teacher-dashboard-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+.teacher-dashboard-loading,
+.teacher-dashboard-error {
+  margin: auto;
+  font-size: 1.2rem;
+  color: #555;
+}

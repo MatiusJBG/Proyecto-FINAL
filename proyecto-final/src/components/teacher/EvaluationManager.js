@@ -1,3 +1,5 @@
+// Archivo eliminado. Reemplazado por TeacherEvaluations.js
+// Archivo obsoleto. Reemplazado por TeacherEvaluations.js
 import React, { useState } from 'react';
 import { FiPlus, FiEdit, FiTrash2, FiEye } from 'react-icons/fi';
 import './EvaluationManager.css';

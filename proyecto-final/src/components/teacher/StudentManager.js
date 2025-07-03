@@ -1,3 +1,5 @@
+// Archivo eliminado. Reemplazado por TeacherStudents.js
+// Archivo obsoleto. Reemplazado por TeacherStudents.js
 import React, { useState, useEffect } from 'react';
 import { FiSearch, FiMail, FiEye, FiBook, FiTrendingUp, FiCalendar, FiClock, FiUsers } from 'react-icons/fi';
 import './StudentManager.css';

@@ -1,0 +1,37 @@
+.course-detail {
+  background: #fff;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  margin-top: 1rem;
+}
+.course-detail h2 {
+  margin-top: 0;
+}
+.back-btn {
+  background: none;
+  border: none;
+  color: #232946;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+.module-form {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+.module-form input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.module-form button {
+  padding: 0.5rem 1rem;
+  background: #232946;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}

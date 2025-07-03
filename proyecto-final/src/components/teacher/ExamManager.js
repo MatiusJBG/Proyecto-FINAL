@@ -1,3 +1,5 @@
+// Archivo eliminado. Reemplazado por TeacherEvaluations.js
+// Archivo obsoleto. Reemplazado por TeacherEvaluations.js
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEye, FiCheckCircle } from 'react-icons/fi';
 import teacherApiService from '../../services/teacherApi';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import TeacherPanel from './components/TeacherPanel';
+import TeacherDashboard from './components/teacher/TeacherDashboard';
 import Login from './components/Login';
 
 function TeacherApp() {
@@ -19,7 +19,7 @@ function TeacherApp() {
   };
 
   return isAuthenticated
-    ? <TeacherPanel onLogout={handleLogout} userData={userData} />
+    ? <TeacherDashboard onLogout={handleLogout} userData={userData} />
     : <Login onLogin={handleLogin} onlyTeacher />;
 }
 

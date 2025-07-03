@@ -1,3 +1,5 @@
+// Archivo eliminado. Reemplazado por TeacherEvaluations.js
+// Archivo obsoleto. Reemplazado por TeacherEvaluations.js
 import React, { useState } from 'react';
 import { FiSearch, FiDownload, FiUpload } from 'react-icons/fi';
 import './GradeManager.css';
