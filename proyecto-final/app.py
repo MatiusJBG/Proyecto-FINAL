@@ -1804,5 +1804,58 @@ def get_cursos_estudiante(estudiante_id):
     finally:
         conn.close()
 
+@app.route('/api/cursos/disponibles', methods=['GET'])
+def get_cursos_disponibles():
+    estudiante_id = request.args.get('estudiante_id')
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT c.ID_Curso, c.Nombre, c.Descripcion, c.Estado, c.Duracion_estimada, p.Nombre as Profesor_Nombre
+            FROM Cursos c
+            LEFT JOIN Profesores p ON c.ID_Profesor = p.ID_Profesor
+            WHERE c.ID_Curso NOT IN (
+                SELECT ID_Curso FROM Matriculas WHERE ID_Estudiante = %s
+            )
+        ''', (estudiante_id,))
+        cursos = cursor.fetchall()
+        return jsonify(cursos)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/matricula', methods=['POST', 'OPTIONS'])
+def matricular_estudiante():
+    if request.method == 'OPTIONS':
+        # Responder OK al preflight CORS
+        return '', 200
+    data = request.json
+    estudiante_id = data.get('estudiante_id')
+    curso_id = data.get('curso_id')
+    if not estudiante_id or not curso_id:
+        return jsonify({'error': 'Faltan datos obligatorios'}), 400
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        # Verificar si ya está matriculado
+        cursor.execute('SELECT * FROM Matriculas WHERE ID_Estudiante = %s AND ID_Curso = %s', (estudiante_id, curso_id))
+        if cursor.fetchone():
+            return jsonify({'error': 'Ya está matriculado en este curso'}), 400
+        # Insertar matrícula
+        cursor.execute('INSERT INTO Matriculas (ID_Estudiante, ID_Curso, Estado, Progreso_total) VALUES (%s, %s, %s, %s)',
+                       (estudiante_id, curso_id, 'activo', 0.0))
+        conn.commit()
+        return jsonify({'message': 'Matrícula exitosa'}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
 if __name__ == '__main__':
     app.run(debug=True)

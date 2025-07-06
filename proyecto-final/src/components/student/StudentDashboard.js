@@ -8,6 +8,7 @@ import NotificationPanel from './NotificationPanel';
 import CourseEnrollment from './CourseEnrollment';
 import CourseTreeView from './CourseTreeView';
 import ExamAttempt from './ExamAttempt';
+import TeacherCoursesExplorer from './TeacherCoursesExplorer';
 import './StudentDashboard.css';
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -133,6 +134,12 @@ export default function StudentDashboard({ onLogout, userData }) {
           >
             Matricularme
           </button>
+          <button
+            className={activeSection === 'explorar' ? 'active' : ''}
+            onClick={() => setActiveSection('explorar')}
+          >
+            Explorar por Profesor
+          </button>
         </div>
         {activeSection === 'cursos' && (
           <section className="course-selector">
@@ -161,6 +168,11 @@ export default function StudentDashboard({ onLogout, userData }) {
           <CourseEnrollment 
             userData={userData} 
             onEnrollmentComplete={handleEnrollmentComplete}
+          />
+        )}
+        {activeSection === 'explorar' && (
+          <TeacherCoursesExplorer 
+            userData={userData}
           />
         )}
         {activeSection === 'cursos' && panelCursoAbierto && cursoActual && (
