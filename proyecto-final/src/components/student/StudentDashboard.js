@@ -17,6 +17,7 @@ export default function StudentDashboard({ onLogout, userData }) {
   const [cursosMatriculados, setCursosMatriculados] = useState([]);
   const [cursoActual, setCursoActual] = useState(null);
   const [estadisticas, setEstadisticas] = useState({});
+  const [recomendaciones, setRecomendaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeSection, setActiveSection] = useState('cursos');
@@ -34,7 +35,8 @@ export default function StudentDashboard({ onLogout, userData }) {
       setLoading(true);
       await Promise.all([
         cargarCursosMatriculados(),
-        cargarEstadisticas()
+        cargarEstadisticas(),
+        cargarRecomendaciones()
       ]);
     } catch (error) {
       setError('Error al cargar los datos');
@@ -68,6 +70,18 @@ export default function StudentDashboard({ onLogout, userData }) {
       setEstadisticas(stats);
     } catch (error) {
       setError('Error al cargar estadísticas');
+    }
+  };
+
+  const cargarRecomendaciones = async () => {
+    try {
+      const response = await fetch(`/api/estudiante/${userData.ID_Estudiante}/recomendaciones`);
+      if (!response.ok) throw new Error('Error al cargar recomendaciones');
+      const recs = await response.json();
+      setRecomendaciones(recs);
+    } catch (error) {
+      console.error('Error al cargar recomendaciones:', error);
+      // No mostrar error si no hay recomendaciones, solo log
     }
   };
 
@@ -189,7 +203,26 @@ export default function StudentDashboard({ onLogout, userData }) {
                 />
               </div>
               <div className="panel panel-recommendation">
-                <RecommendationCard recommendation={{}} />
+                {recomendaciones.length > 0 ? (
+                  recomendaciones.slice(0, 3).map((rec, index) => (
+                    <RecommendationCard 
+                      key={index}
+                      recommendation={{
+                        icon: '💡',
+                        message: rec.Accion_recomendada || 'Recomendación personalizada',
+                        reason: rec.Regla_Nombre || 'Basada en tu progreso actual'
+                      }} 
+                    />
+                  ))
+                ) : (
+                  <RecommendationCard 
+                    recommendation={{
+                      icon: '📚',
+                      message: 'Continúa con tu progreso',
+                      reason: 'Completa más lecciones para recibir recomendaciones personalizadas'
+                    }} 
+                  />
+                )}
               </div>
             </div>
             {evaluacionEnCurso ? (
