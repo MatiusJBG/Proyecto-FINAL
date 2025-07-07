@@ -24,11 +24,13 @@ function AdminPanel() {
   useEffect(() => {
     const fetchCursos = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/cursos');
-        const cursos = await res.json();
-        if (Array.isArray(cursos)) {
+        const res = await fetch('http://localhost:5000/api/estructura-completa', {
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (data && Array.isArray(data.cursos)) {
           // Mapea los campos de la base de datos a los que espera el frontend
-          const cursosConModulos = cursos.map(c => ({
+          const cursosConModulos = data.cursos.map(c => ({
             id: c.ID_Curso || c.id,
             nombre: c.Nombre || c.nombre,
             descripcion: c.Descripcion || c.descripcion || '',
@@ -36,12 +38,54 @@ function AdminPanel() {
             docente: c.Profesor_Nombre || c.docente || '',
             duracion: c.Duracion_estimada || c.duracion_estimada,
             idProfesor: c.ID_Profesor || c.id_profesor,
-            modulos: [],
+            modulos: Array.isArray(c.modulos) ? c.modulos.map(m => ({
+              id: m.ID_Modulo || m.id,
+              nombre: m.Nombre || m.nombre,
+              descripcion: m.Descripcion || m.descripcion || '',
+              orden: m.Orden || m.orden || 1,
+              duracion_estimada: m.Duracion_estimada || m.duracion_estimada || 0,
+              lecciones: Array.isArray(m.lecciones) ? m.lecciones.map(l => ({
+                id: l.ID_Leccion || l.id,
+                nombre: l.Nombre || l.nombre,
+                descripcion: l.Descripcion || l.descripcion || '',
+                contenido: l.Contenido || l.contenido || '',
+                orden: l.Orden || l.orden || 1,
+                duracion_estimada: l.Duracion_estimada || l.duracion_estimada || 0,
+                es_obligatoria: l.Es_obligatoria || l.es_obligatoria || true,
+                evaluaciones: Array.isArray(l.evaluaciones) ? l.evaluaciones.map(e => ({
+                  id: e.ID_Evaluacion || e.id,
+                  nombre: e.Nombre || e.nombre || e.titulo || '',
+                  descripcion: e.Descripcion || e.descripcion || '',
+                  puntaje_aprobacion: e.Puntaje_aprobacion || e.puntaje_aprobacion || 70,
+                  max_intentos: e.Max_intentos || e.max_intentos || 3
+                })) : []
+              })) : []
+            })) : []
           }));
           setData(d => ({ ...d, cursos: cursosConModulos }));
         }
       } catch (e) {
-        // Puedes mostrar un error si lo deseas
+        console.error('Error cargando estructura completa:', e);
+        // Fallback: intentar cargar solo cursos básicos
+        try {
+          const res = await fetch('http://localhost:5000/api/cursos');
+          const cursos = await res.json();
+          if (Array.isArray(cursos)) {
+            const cursosConModulos = cursos.map(c => ({
+              id: c.ID_Curso || c.id,
+              nombre: c.Nombre || c.nombre,
+              descripcion: c.Descripcion || c.descripcion || '',
+              activo: (c.Estado || c.estado || '').toLowerCase() === 'activo',
+              docente: c.Profesor_Nombre || c.docente || '',
+              duracion: c.Duracion_estimada || c.duracion_estimada,
+              idProfesor: c.ID_Profesor || c.id_profesor,
+              modulos: [],
+            }));
+            setData(d => ({ ...d, cursos: cursosConModulos }));
+          }
+        } catch (fallbackError) {
+          console.error('Error en fallback:', fallbackError);
+        }
       }
     };
     fetchCursos();
@@ -57,26 +101,73 @@ function AdminPanel() {
   // Recargar cursos desde el backend después de agregar uno nuevo
   const recargarCursos = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/cursos');
-      const cursos = await res.json();
-      if (Array.isArray(cursos)) {
-        const cursosConModulos = cursos.map(c => ({
+      const res = await fetch('http://localhost:5000/api/estructura-completa', {
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (data && Array.isArray(data.cursos)) {
+        const cursosConModulos = data.cursos.map(c => ({
           id: c.ID_Curso || c.id,
           nombre: c.Nombre || c.nombre,
           descripcion: c.Descripcion || c.descripcion || '',
           estado: c.Estado || c.estado,
           duracion: c.Duracion_estimada || c.duracion_estimada,
           idProfesor: c.ID_Profesor || c.id_profesor,
-          modulos: [],
+          modulos: Array.isArray(c.modulos) ? c.modulos.map(m => ({
+            id: m.ID_Modulo || m.id,
+            nombre: m.Nombre || m.nombre,
+            descripcion: m.Descripcion || m.descripcion || '',
+            orden: m.Orden || m.orden || 1,
+            duracion_estimada: m.Duracion_estimada || m.duracion_estimada || 0,
+            lecciones: Array.isArray(m.lecciones) ? m.lecciones.map(l => ({
+              id: l.ID_Leccion || l.id,
+              nombre: l.Nombre || l.nombre,
+              descripcion: l.Descripcion || l.descripcion || '',
+              contenido: l.Contenido || l.contenido || '',
+              orden: l.Orden || l.orden || 1,
+              duracion_estimada: l.Duracion_estimada || l.duracion_estimada || 0,
+              es_obligatoria: l.Es_obligatoria || l.es_obligatoria || true,
+              evaluaciones: Array.isArray(l.evaluaciones) ? l.evaluaciones.map(e => ({
+                id: e.ID_Evaluacion || e.id,
+                nombre: e.Nombre || e.nombre || e.titulo || '',
+                descripcion: e.Descripcion || e.descripcion || '',
+                puntaje_aprobacion: e.Puntaje_aprobacion || e.puntaje_aprobacion || 70,
+                max_intentos: e.Max_intentos || e.max_intentos || 3
+              })) : []
+            })) : []
+          })) : []
         }));
         setData(d => ({ ...d, cursos: cursosConModulos }));
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error recargando estructura completa:', e);
+      // Fallback: intentar cargar solo cursos básicos
+      try {
+        const res = await fetch('http://localhost:5000/api/cursos');
+        const cursos = await res.json();
+        if (Array.isArray(cursos)) {
+          const cursosConModulos = cursos.map(c => ({
+            id: c.ID_Curso || c.id,
+            nombre: c.Nombre || c.nombre,
+            descripcion: c.Descripcion || c.descripcion || '',
+            estado: c.Estado || c.estado,
+            duracion: c.Duracion_estimada || c.duracion_estimada,
+            idProfesor: c.ID_Profesor || c.id_profesor,
+            modulos: [],
+          }));
+          setData(d => ({ ...d, cursos: cursosConModulos }));
+        }
+      } catch (fallbackError) {
+        console.error('Error en fallback:', fallbackError);
+      }
+    }
   };
 
   // Esta función se pasa a CourseForm para que recargue los cursos reales
   const agregarCurso = () => {
     recargarCursos();
+    // Actualizar timestamp para forzar recarga del grafo
+    setData(d => ({ ...d, lastUpdate: Date.now() }));
   };
   const eliminarCurso = async (id) => {
     // Buscar el curso real para obtener el ID_Curso de la base de datos
@@ -85,6 +176,8 @@ function AdminPanel() {
     try {
       await fetch(`http://localhost:5000/api/cursos/${realId}`, { method: 'DELETE' });
       recargarCursos();
+      // Actualizar timestamp para forzar recarga del grafo
+      setData(d => ({ ...d, lastUpdate: Date.now() }));
     } catch (e) {
       // Puedes mostrar un error si lo deseas
     }
@@ -97,6 +190,7 @@ function AdminPanel() {
       cursos: data.cursos.map(c =>
         c.id === cursoId ? { ...c, modulos: [...c.modulos, { id: Date.now(), nombre, lecciones: [] }] } : c
       ),
+      lastUpdate: Date.now()
     });
   };
   const eliminarModulo = (cursoId, moduloId) => {
@@ -105,6 +199,7 @@ function AdminPanel() {
       cursos: data.cursos.map(c =>
         c.id === cursoId ? { ...c, modulos: c.modulos.filter(m => m.id !== moduloId) } : c
       ),
+      lastUpdate: Date.now()
     });
   };
 
@@ -122,6 +217,7 @@ function AdminPanel() {
             }
           : c
       ),
+      lastUpdate: Date.now()
     });
   };
   const eliminarLeccion = (cursoId, moduloId, leccionId) => {
@@ -137,6 +233,7 @@ function AdminPanel() {
             }
           : c
       ),
+      lastUpdate: Date.now()
     });
   };
 
@@ -234,7 +331,7 @@ function AdminPanel() {
         {activeTab === 'crearusuario' && <CreateUser />}
         {activeTab === 'creardocente' && <CreateTeacher />}
         {activeTab === 'gestionusuarios' && <UserManagement />}
-        {activeTab === 'grafos' && <GraphsPanel data={data} />}
+        {activeTab === 'grafos' && <GraphsPanel data={data} key={data.lastUpdate || Date.now()} />}
         {activeTab === 'estadisticas' && <StatsPanel />}
       </div>
     </div>
