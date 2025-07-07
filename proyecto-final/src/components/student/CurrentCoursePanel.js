@@ -109,7 +109,7 @@ export default function CurrentCoursePanel({ course, progresoLecciones = [], onP
       <div className="panel-header">
         <h3>{course?.name || 'Curso Actual'}</h3>
         <div className="course-info">
-          <span className="progress-text">Progreso: {Math.round(course?.progress || 0)}%</span>
+          <span className="progress-text">Progreso: {Math.round(Math.min(course?.progress || 0, 100))}%</span>
         </div>
       </div>
       

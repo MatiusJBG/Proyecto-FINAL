@@ -165,6 +165,53 @@ def eliminar_pregunta(pregunta_id):
     finally:
         conn.close()
 
+# Endpoint para agregar opciones a una pregunta
+@app.route('/api/preguntas/<int:pregunta_id>/opciones', methods=['POST'])
+def agregar_opcion_pregunta(pregunta_id):
+    data = request.json
+    texto = data.get('texto')
+    es_correcta = data.get('es_correcta', False)
+    
+    if not texto:
+        return jsonify({'error': 'El texto de la opción es obligatorio'}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Verificar que la pregunta existe
+        cursor.execute('SELECT id FROM preguntas WHERE id = %s', (pregunta_id,))
+        if not cursor.fetchone():
+            return jsonify({'error': 'La pregunta especificada no existe'}), 404
+        
+        # Insertar la opción
+        cursor.execute('''
+            INSERT INTO opciones (id_pregunta, texto, es_correcta, orden)
+            VALUES (%s, %s, %s, (SELECT COALESCE(MAX(orden), 0) + 1 FROM opciones WHERE id_pregunta = %s))
+        ''', (pregunta_id, texto, es_correcta, pregunta_id))
+        
+        opcion_id = cursor.lastrowid
+        conn.commit()
+        
+        return jsonify({
+            'message': 'Opción agregada exitosamente',
+            'opcion': {
+                'id': opcion_id,
+                'id_pregunta': pregunta_id,
+                'texto': texto,
+                'es_correcta': es_correcta
+            }
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
 # Endpoint de diagnóstico para verificar las tablas
 @app.route('/api/diagnostico/tablas', methods=['GET'])
 def diagnosticar_tablas():
@@ -276,18 +323,155 @@ def responder_evaluacion(evaluacion_id):
         return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
 
     try:
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Obtener información de la evaluación
+        cursor.execute('''
+            SELECT e.*, COUNT(p.id) as total_preguntas
+            FROM Evaluaciones e
+            LEFT JOIN preguntas p ON e.ID_Evaluacion = p.id_evaluacion
+            WHERE e.ID_Evaluacion = %s
+            GROUP BY e.ID_Evaluacion
+        ''', (evaluacion_id,))
+        
+        evaluacion = cursor.fetchone()
+        if not evaluacion:
+            return jsonify({'error': 'Evaluación no encontrada'}), 404
+        
+        # Validar máximo de intentos
+        cursor.execute('''
+            SELECT COUNT(*) as intentos_realizados FROM Resultados_Evaluaciones WHERE ID_Estudiante = %s AND ID_Evaluacion = %s
+        ''', (estudiante_id, evaluacion_id))
+        intentos = cursor.fetchone()['intentos_realizados']
+        if intentos >= evaluacion['Max_intentos']:
+            return jsonify({'error': 'Has alcanzado el máximo de intentos permitidos para esta evaluación.'}), 403
+        
+        # Registrar respuestas y calcular puntaje
+        respuestas_correctas = 0
+        total_preguntas = 0
+        
         for r in respuestas:
             id_pregunta = r.get('id_pregunta')
             id_opcion = r.get('id_opcion')
             if not id_pregunta or not id_opcion:
-                continue  # O puedes retornar error si prefieres
+                continue
+            
+            # Registrar respuesta del estudiante
             cursor.execute('''
                 INSERT INTO respuestas_estudiantes (id_estudiante, id_pregunta, id_opcion, fecha_respuesta)
                 VALUES (%s, %s, %s, NOW())
             ''', (estudiante_id, id_pregunta, id_opcion))
+            
+            # Verificar si la respuesta es correcta
+            cursor.execute('''
+                SELECT es_correcta FROM opciones WHERE id = %s
+            ''', (id_opcion,))
+            opcion = cursor.fetchone()
+            
+            if opcion and opcion['es_correcta']:
+                respuestas_correctas += 1
+            total_preguntas += 1
+        
+        # Calcular puntaje
+        puntaje = (respuestas_correctas / total_preguntas * 100) if total_preguntas > 0 else 0
+        aprobado = puntaje >= evaluacion['Puntaje_aprobacion']
+        
+        # Registrar resultado en Resultados_Evaluaciones
+        cursor.execute('''
+            INSERT INTO Resultados_Evaluaciones 
+            (ID_Estudiante, ID_Evaluacion, Puntaje, Tiempo_utilizado)
+            VALUES (%s, %s, %s, %s)
+        ''', (estudiante_id, evaluacion_id, puntaje, 0))
+        
+        # Si la evaluación está asociada a una lección, marcar la lección como completada
+        if evaluacion['ID_Leccion']:
+            cursor.execute('''
+                INSERT INTO Progreso_Lecciones 
+                (ID_Estudiante, ID_Leccion, Completado, Tiempo_dedicado, Fecha_inicio, Fecha_ultimo_acceso, Veces_accedido)
+                VALUES (%s, %s, %s, %s, NOW(), NOW(), 1)
+                ON DUPLICATE KEY UPDATE
+                Completado = VALUES(Completado),
+                Fecha_ultimo_acceso = NOW(),
+                Veces_accedido = Veces_accedido + 1
+            ''', (estudiante_id, evaluacion['ID_Leccion'], aprobado, 0))
+        
         conn.commit()
-        return jsonify({'message': 'Respuestas registradas correctamente'}), 201
+        
+        # ... después de marcar la lección como completada
+        # Obtener el curso asociado a la evaluación
+        curso_id = None
+        if evaluacion['ID_Leccion']:
+            cursor.execute('''
+                SELECT m.ID_Curso FROM Lecciones l JOIN Modulos m ON l.ID_Modulo = m.ID_Modulo WHERE l.ID_Leccion = %s
+            ''', (evaluacion['ID_Leccion'],))
+            row = cursor.fetchone()
+            if row:
+                curso_id = row['ID_Curso']
+        elif evaluacion['ID_Modulo']:
+            cursor.execute('''
+                SELECT ID_Curso FROM Modulos WHERE ID_Modulo = %s
+            ''', (evaluacion['ID_Modulo'],))
+            row = cursor.fetchone()
+            if row:
+                curso_id = row['ID_Curso']
+        # Si se encontró el curso, calcular el progreso y actualizar Matriculas
+        if curso_id:
+            # Calcular progreso total del curso (misma lógica que /progreso)
+            # Obtener totales
+            cursor.execute('''
+                SELECT COUNT(DISTINCT m.ID_Modulo) as total_modulos,
+                       COUNT(DISTINCT l.ID_Leccion) as total_lecciones,
+                       COUNT(DISTINCT e.ID_Evaluacion) as total_evaluaciones
+                FROM Cursos c
+                LEFT JOIN Modulos m ON c.ID_Curso = m.ID_Curso
+                LEFT JOIN Lecciones l ON m.ID_Modulo = l.ID_Modulo
+                LEFT JOIN Evaluaciones e ON (l.ID_Leccion = e.ID_Leccion OR m.ID_Modulo = e.ID_Modulo)
+                WHERE c.ID_Curso = %s
+            ''', (curso_id,))
+            totales = cursor.fetchone()
+            total_modulos = totales['total_modulos'] or 0
+            total_lecciones = totales['total_lecciones'] or 0
+            total_evaluaciones = totales['total_evaluaciones'] or 0
+            # Obtener progreso del estudiante
+            cursor.execute('''
+                SELECT 
+                    COUNT(DISTINCT pl.ID_Leccion) as lecciones_completadas,
+                    COUNT(DISTINCT re.ID_Evaluacion) as evaluaciones_realizadas,
+                    COUNT(CASE WHEN re.Puntaje >= ev.Puntaje_aprobacion THEN 1 END) as evaluaciones_aprobadas,
+                    COUNT(DISTINCT CASE WHEN pl.Completado = 1 THEN m.ID_Modulo END) as modulos_con_progreso
+                FROM Matriculas mat
+                LEFT JOIN Modulos m ON mat.ID_Curso = m.ID_Curso
+                LEFT JOIN Lecciones l ON m.ID_Modulo = l.ID_Modulo
+                LEFT JOIN Progreso_Lecciones pl ON l.ID_Leccion = pl.ID_Leccion AND pl.ID_Estudiante = %s
+                LEFT JOIN Evaluaciones ev ON (l.ID_Leccion = ev.ID_Leccion OR m.ID_Modulo = ev.ID_Modulo)
+                LEFT JOIN Resultados_Evaluaciones re ON ev.ID_Evaluacion = re.ID_Evaluacion AND re.ID_Estudiante = %s
+                WHERE mat.ID_Curso = %s AND mat.ID_Estudiante = %s
+            ''', (estudiante_id, estudiante_id, curso_id, estudiante_id))
+            progreso_info = cursor.fetchone()
+            lecciones_completadas = progreso_info['lecciones_completadas'] or 0
+            evaluaciones_aprobadas = progreso_info['evaluaciones_aprobadas'] or 0
+            modulos_con_progreso = progreso_info['modulos_con_progreso'] or 0
+            # Calcular porcentajes
+            progreso_lecciones = (lecciones_completadas / total_lecciones * 100) if total_lecciones > 0 else 0
+            progreso_evaluaciones = (evaluaciones_aprobadas / total_evaluaciones * 100) if total_evaluaciones > 0 else 0
+            progreso_modulos = (modulos_con_progreso / total_modulos * 100) if total_modulos > 0 else 0
+            progreso_total = (progreso_lecciones * 0.4 + progreso_evaluaciones * 0.4 + progreso_modulos * 0.2)
+            progreso_total = min(progreso_total, 100)  # Limitar a 100
+            # Actualizar Matriculas
+            cursor.execute('''
+                UPDATE Matriculas SET Progreso_total = %s WHERE ID_Estudiante = %s AND ID_Curso = %s
+            ''', (progreso_total, estudiante_id, curso_id))
+            conn.commit()
+        
+        return jsonify({
+            'message': 'Evaluación completada correctamente',
+            'puntaje': puntaje,
+            'aprobado': aprobado,
+            'respuestas_correctas': respuestas_correctas,
+            'total_preguntas': total_preguntas,
+            'puntaje_aprobacion': evaluacion['Puntaje_aprobacion']
+        }), 201
+        
     except Exception as e:
         conn.rollback()
         return jsonify({'error': str(e)}), 500
@@ -415,31 +599,41 @@ def get_recomendaciones_estudiante(estudiante_id):
     finally:
         conn.close()
 
-# Endpoint para generar recomendación basada en árbol de decisión
 @app.route('/api/estudiante/<int:estudiante_id>/generar-recomendacion', methods=['POST'])
 def generar_recomendacion(estudiante_id):
     conn = get_connection()
     if not conn:
         return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    # Obtener el puntaje de la evaluación del body de la petición
+    data = request.json
+    puntaje_evaluacion = data.get('puntaje_evaluacion') if data else None
+    
     try:
         cursor = conn.cursor(dictionary=True)
-        # Obtener datos del estudiante para el árbol de decisión
-        cursor.execute('''
-            SELECT 
-                AVG(re.Puntaje) as promedio_puntajes,
-                COUNT(CASE WHEN re.Aprobado = 1 THEN 1 END) as evaluaciones_aprobadas,
-                COUNT(re.ID_Resultado) as total_evaluaciones,
-                AVG(m.Progreso_total) as promedio_progreso
-            FROM Estudiantes e
-            LEFT JOIN Resultados_Evaluaciones re ON e.ID_Estudiante = re.ID_Estudiante
-            LEFT JOIN Matriculas m ON e.ID_Estudiante = m.ID_Estudiante
-            WHERE e.ID_Estudiante = %s
-        ''', (estudiante_id,))
-        datos_estudiante = cursor.fetchone()
-        if not datos_estudiante or all(v is None for v in datos_estudiante.values()):
-            return jsonify({'error': 'No hay datos suficientes para generar recomendación'}), 400
-        # Lógica simplificada del árbol de decisión
-        recomendacion = generar_arbol_decision(datos_estudiante)
+        
+        # Si se proporciona un puntaje específico, usarlo para la recomendación
+        if puntaje_evaluacion is not None:
+            recomendacion = generar_recomendacion_por_puntaje(puntaje_evaluacion)
+        else:
+            # Obtener datos del estudiante para el árbol de decisión (lógica original)
+            cursor.execute('''
+                SELECT 
+                    AVG(re.Puntaje) as promedio_puntajes,
+                    COUNT(CASE WHEN re.Aprobado = 1 THEN 1 END) as evaluaciones_aprobadas,
+                    COUNT(re.ID_Resultado) as total_evaluaciones,
+                    AVG(m.Progreso_total) as promedio_progreso
+                FROM Estudiantes e
+                LEFT JOIN Resultados_Evaluaciones re ON e.ID_Estudiante = re.ID_Estudiante
+                LEFT JOIN Matriculas m ON e.ID_Estudiante = m.ID_Estudiante
+                WHERE e.ID_Estudiante = %s
+            ''', (estudiante_id,))
+            datos_estudiante = cursor.fetchone()
+            if not datos_estudiante or all(v is None for v in datos_estudiante.values()):
+                return jsonify({'error': 'No hay datos suficientes para generar recomendación'}), 400
+            # Lógica simplificada del árbol de decisión
+            recomendacion = generar_arbol_decision(datos_estudiante)
+        
         # Registrar la recomendación
         cursor.execute('''
             INSERT INTO Historial_Recomendaciones 
@@ -453,39 +647,71 @@ def generar_recomendacion(estudiante_id):
     finally:
         conn.close()
 
-def generar_arbol_decision(datos_estudiante):
-    """Función para generar recomendación basada en árbol de decisión"""
-    promedio_puntajes = datos_estudiante['promedio_puntajes'] or 0
-    promedio_progreso = datos_estudiante['promedio_progreso'] or 0
-    evaluaciones_aprobadas = datos_estudiante['evaluaciones_aprobadas'] or 0
-    total_evaluaciones = datos_estudiante['total_evaluaciones'] or 0
-    
-    # Lógica del árbol de decisión
-    if promedio_puntajes < 70:
+def generar_recomendacion_por_puntaje(puntaje):
+    """Función para generar recomendación personalizada basada en el puntaje específico de una evaluación"""
+    # Recomendación personalizada según el puntaje de la evaluación
+    if puntaje < 50:
         return {
             'regla_id': 1,
-            'accion': 'Repasar módulos anteriores y practicar más ejercicios',
+            'accion': 'Tus resultados muestran dificultades. Te recomendamos repasar los módulos anteriores y pedir ayuda a tu docente.',
             'tipo': 'refuerzo',
             'prioridad': 'alta'
         }
-    elif promedio_progreso < 50:
+    elif puntaje < 70:
         return {
             'regla_id': 2,
-            'accion': 'Dedicar más tiempo al estudio y completar lecciones pendientes',
-            'tipo': 'progreso',
+            'accion': 'Vas mejorando, pero aún puedes reforzar conceptos clave. Repasa las lecciones y realiza ejercicios adicionales.',
+            'tipo': 'refuerzo',
             'prioridad': 'media'
         }
-    elif evaluaciones_aprobadas / max(total_evaluaciones, 1) < 0.8:
+    elif puntaje < 85:
         return {
             'regla_id': 3,
-            'accion': 'Revisar conceptos clave antes de las evaluaciones',
-            'tipo': 'evaluacion',
+            'accion': '¡Buen trabajo! Has aprobado la evaluación. Sigue practicando para mejorar aún más.',
+            'tipo': 'motivacion',
             'prioridad': 'media'
         }
     else:
         return {
             'regla_id': 4,
-            'accion': '¡Excelente progreso! Continúa con el siguiente módulo',
+            'accion': '¡Excelente desempeño! Continúa así y desafíate con contenidos avanzados o ayuda a tus compañeros.',
+            'tipo': 'motivacion',
+            'prioridad': 'baja'
+        }
+
+def generar_arbol_decision(datos_estudiante):
+    """Función para generar recomendación personalizada basada en el puntaje promedio de evaluaciones"""
+    promedio_puntajes = datos_estudiante['promedio_puntajes'] or 0
+    promedio_progreso = datos_estudiante.get('promedio_progreso', 0) or 0
+    evaluaciones_aprobadas = datos_estudiante.get('evaluaciones_aprobadas', 0) or 0
+    total_evaluaciones = datos_estudiante.get('total_evaluaciones', 0) or 0
+
+    # Recomendación personalizada según el puntaje promedio
+    if promedio_puntajes < 50:
+        return {
+            'regla_id': 1,
+            'accion': 'Tus resultados muestran dificultades. Te recomendamos repasar los módulos anteriores y pedir ayuda a tu docente.',
+            'tipo': 'refuerzo',
+            'prioridad': 'alta'
+        }
+    elif promedio_puntajes < 70:
+        return {
+            'regla_id': 2,
+            'accion': 'Vas mejorando, pero aún puedes reforzar conceptos clave. Repasa las lecciones y realiza ejercicios adicionales.',
+            'tipo': 'refuerzo',
+            'prioridad': 'media'
+        }
+    elif promedio_puntajes < 85:
+        return {
+            'regla_id': 3,
+            'accion': '¡Buen trabajo! Has aprobado la mayoría de las evaluaciones. Sigue practicando para mejorar aún más.',
+            'tipo': 'motivacion',
+            'prioridad': 'media'
+        }
+    else:
+        return {
+            'regla_id': 4,
+            'accion': '¡Excelente desempeño! Continúa así y desafíate con contenidos avanzados o ayuda a tus compañeros.',
             'tipo': 'motivacion',
             'prioridad': 'baja'
         }
@@ -1853,6 +2079,230 @@ def matricular_estudiante():
         return jsonify({'message': 'Matrícula exitosa'}), 201
     except Exception as e:
         conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para obtener progreso del módulo de un estudiante
+@app.route('/api/estudiante/<int:estudiante_id>/curso/<int:curso_id>/progreso-modulo', methods=['GET'])
+def get_progreso_modulo_estudiante(estudiante_id, curso_id):
+    """Obtiene el progreso del módulo actual del estudiante en un curso"""
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Obtener el módulo actual del estudiante (el último módulo con progreso)
+        cursor.execute('''
+            SELECT m.ID_Modulo, m.Nombre as nombre_modulo,
+                   COUNT(l.ID_Leccion) as total_lecciones,
+                   COUNT(CASE WHEN pl.Completado = 1 THEN 1 END) as lecciones_completadas,
+                   COUNT(e.ID_Evaluacion) as total_evaluaciones,
+                   COUNT(CASE WHEN re.Puntaje >= e.Puntaje_aprobacion THEN 1 END) as evaluaciones_aprobadas
+            FROM Modulos m
+            LEFT JOIN Lecciones l ON m.ID_Modulo = l.ID_Modulo
+            LEFT JOIN Progreso_Lecciones pl ON l.ID_Leccion = pl.ID_Leccion AND pl.ID_Estudiante = %s
+            LEFT JOIN Evaluaciones e ON (l.ID_Leccion = e.ID_Leccion OR m.ID_Modulo = e.ID_Modulo)
+            LEFT JOIN Resultados_Evaluaciones re ON e.ID_Evaluacion = re.ID_Evaluacion AND re.ID_Estudiante = %s
+            WHERE m.ID_Curso = %s
+            GROUP BY m.ID_Modulo, m.Nombre
+            ORDER BY m.Orden DESC
+            LIMIT 1
+        ''', (estudiante_id, estudiante_id, curso_id))
+        
+        resultado = cursor.fetchone()
+        
+        if resultado:
+            # Calcular progreso del módulo
+            total_lecciones = resultado['total_lecciones'] or 0
+            lecciones_completadas = resultado['lecciones_completadas'] or 0
+            total_evaluaciones = resultado['total_evaluaciones'] or 0
+            evaluaciones_aprobadas = resultado['evaluaciones_aprobadas'] or 0
+            
+            # Progreso basado en lecciones completadas
+            progreso_lecciones = (lecciones_completadas / total_lecciones * 100) if total_lecciones > 0 else 0
+            
+            # Progreso basado en evaluaciones aprobadas
+            progreso_evaluaciones = (evaluaciones_aprobadas / total_evaluaciones * 100) if total_evaluaciones > 0 else 0
+            
+            # Progreso general del módulo (promedio de lecciones y evaluaciones)
+            progreso_general = (progreso_lecciones + progreso_evaluaciones) / 2 if (total_lecciones > 0 or total_evaluaciones > 0) else 0
+            
+            return jsonify({
+                'id_modulo': resultado['ID_Modulo'],
+                'nombre_modulo': resultado['nombre_modulo'],
+                'total_lecciones': total_lecciones,
+                'lecciones_completadas': lecciones_completadas,
+                'total_evaluaciones': total_evaluaciones,
+                'evaluaciones_aprobadas': evaluaciones_aprobadas,
+                'progreso': progreso_general,
+                'progreso_lecciones': progreso_lecciones,
+                'progreso_evaluaciones': progreso_evaluaciones
+            })
+        else:
+            return jsonify({
+                'id_modulo': None,
+                'nombre_modulo': 'Sin módulos',
+                'total_lecciones': 0,
+                'lecciones_completadas': 0,
+                'total_evaluaciones': 0,
+                'evaluaciones_aprobadas': 0,
+                'progreso': 0,
+                'progreso_lecciones': 0,
+                'progreso_evaluaciones': 0
+            })
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# Endpoint para obtener progreso del curso de un estudiante
+@app.route('/api/estudiante/<int:estudiante_id>/curso/<int:curso_id>/progreso', methods=['GET'])
+def get_progreso_curso_estudiante(estudiante_id, curso_id):
+    """Obtiene el progreso general del estudiante en un curso"""
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Obtener información del curso
+        cursor.execute('''
+            SELECT c.ID_Curso, c.Nombre as nombre_curso,
+                   COUNT(DISTINCT m.ID_Modulo) as total_modulos,
+                   COUNT(DISTINCT l.ID_Leccion) as total_lecciones,
+                   COUNT(DISTINCT e.ID_Evaluacion) as total_evaluaciones
+            FROM Cursos c
+            LEFT JOIN Modulos m ON c.ID_Curso = m.ID_Curso
+            LEFT JOIN Lecciones l ON m.ID_Modulo = l.ID_Modulo
+            LEFT JOIN Evaluaciones e ON (l.ID_Leccion = e.ID_Leccion OR m.ID_Modulo = e.ID_Modulo)
+            WHERE c.ID_Curso = %s
+            GROUP BY c.ID_Curso, c.Nombre
+        ''', (curso_id,))
+        
+        curso_info = cursor.fetchone()
+        
+        if not curso_info:
+            return jsonify({'error': 'Curso no encontrado'}), 404
+        
+        # Obtener progreso del estudiante
+        cursor.execute('''
+            SELECT 
+                COUNT(DISTINCT pl.ID_Leccion) as lecciones_completadas,
+                COUNT(DISTINCT re.ID_Evaluacion) as evaluaciones_realizadas,
+                COUNT(CASE WHEN re.Puntaje >= ev.Puntaje_aprobacion THEN 1 END) as evaluaciones_aprobadas,
+                AVG(re.Puntaje) as promedio_evaluaciones,
+                COUNT(DISTINCT CASE WHEN pl.Completado = 1 THEN m.ID_Modulo END) as modulos_con_progreso
+            FROM Matriculas mat
+            LEFT JOIN Modulos m ON mat.ID_Curso = m.ID_Curso
+            LEFT JOIN Lecciones l ON m.ID_Modulo = l.ID_Modulo
+            LEFT JOIN Progreso_Lecciones pl ON l.ID_Leccion = pl.ID_Leccion AND pl.ID_Estudiante = %s
+            LEFT JOIN Evaluaciones ev ON (l.ID_Leccion = ev.ID_Leccion OR m.ID_Modulo = ev.ID_Modulo)
+            LEFT JOIN Resultados_Evaluaciones re ON ev.ID_Evaluacion = re.ID_Evaluacion AND re.ID_Estudiante = %s
+            WHERE mat.ID_Curso = %s AND mat.ID_Estudiante = %s
+        ''', (estudiante_id, estudiante_id, curso_id, estudiante_id))
+        
+        progreso_info = cursor.fetchone()
+        
+        if progreso_info:
+            total_modulos = curso_info['total_modulos'] or 0
+            total_lecciones = curso_info['total_lecciones'] or 0
+            total_evaluaciones = curso_info['total_evaluaciones'] or 0
+            
+            lecciones_completadas = progreso_info['lecciones_completadas'] or 0
+            evaluaciones_realizadas = progreso_info['evaluaciones_realizadas'] or 0
+            evaluaciones_aprobadas = progreso_info['evaluaciones_aprobadas'] or 0
+            promedio_evaluaciones = progreso_info['promedio_evaluaciones'] or 0
+            modulos_con_progreso = progreso_info['modulos_con_progreso'] or 0
+            
+            # Calcular progreso total
+            progreso_lecciones = (lecciones_completadas / total_lecciones * 100) if total_lecciones > 0 else 0
+            progreso_evaluaciones = (evaluaciones_aprobadas / total_evaluaciones * 100) if total_evaluaciones > 0 else 0
+            progreso_modulos = (modulos_con_progreso / total_modulos * 100) if total_modulos > 0 else 0
+            
+            # Progreso total ponderado (40% lecciones, 40% evaluaciones, 20% módulos)
+            progreso_total = (progreso_lecciones * 0.4 + progreso_evaluaciones * 0.4 + progreso_modulos * 0.2)
+            
+            return jsonify({
+                'id_curso': curso_info['ID_Curso'],
+                'nombre_curso': curso_info['nombre_curso'],
+                'total_modulos': total_modulos,
+                'total_lecciones': total_lecciones,
+                'total_evaluaciones': total_evaluaciones,
+                'lecciones_completadas': lecciones_completadas,
+                'evaluaciones_realizadas': evaluaciones_realizadas,
+                'evaluaciones_aprobadas': evaluaciones_aprobadas,
+                'modulos_completados': modulos_con_progreso,
+                'promedio_evaluaciones': promedio_evaluaciones,
+                'progreso_total': progreso_total,
+                'progreso_lecciones': progreso_lecciones,
+                'progreso_evaluaciones': progreso_evaluaciones,
+                'progreso_modulos': progreso_modulos
+            })
+        else:
+            return jsonify({
+                'id_curso': curso_info['ID_Curso'],
+                'nombre_curso': curso_info['nombre_curso'],
+                'total_modulos': curso_info['total_modulos'] or 0,
+                'total_lecciones': curso_info['total_lecciones'] or 0,
+                'total_evaluaciones': curso_info['total_evaluaciones'] or 0,
+                'lecciones_completadas': 0,
+                'evaluaciones_realizadas': 0,
+                'evaluaciones_aprobadas': 0,
+                'modulos_completados': 0,
+                'promedio_evaluaciones': 0,
+                'progreso_total': 0,
+                'progreso_lecciones': 0,
+                'progreso_evaluaciones': 0,
+                'progreso_modulos': 0
+            })
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/estudiante/<int:estudiante_id>/ultimo-puntaje', methods=['GET'])
+def get_ultimo_puntaje_estudiante(estudiante_id):
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT Puntaje
+            FROM Resultados_Evaluaciones
+            WHERE ID_Estudiante = %s
+            ORDER BY Fecha_intento DESC, ID_Resultado DESC
+            LIMIT 1
+        ''', (estudiante_id,))
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({'puntaje': None})
+        return jsonify({'puntaje': row['Puntaje']})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/evaluaciones/<int:evaluacion_id>/intentos/<int:estudiante_id>', methods=['GET'])
+def get_intentos_evaluacion_estudiante(evaluacion_id, estudiante_id):
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT Max_intentos FROM Evaluaciones WHERE ID_Evaluacion = %s', (evaluacion_id,))
+        row = cursor.fetchone()
+        max_intentos = row['Max_intentos'] if row else 1
+        cursor.execute('SELECT COUNT(*) as usados FROM Resultados_Evaluaciones WHERE ID_Evaluacion = %s AND ID_Estudiante = %s', (evaluacion_id, estudiante_id))
+        usados = cursor.fetchone()['usados']
+        return jsonify({'usados': usados, 'max': max_intentos})
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()

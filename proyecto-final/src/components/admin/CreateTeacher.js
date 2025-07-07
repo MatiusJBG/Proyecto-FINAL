@@ -5,16 +5,10 @@ function CreateTeacher() {
   const [show, setShow] = useState(false);
   const [form, setForm] = useState({
     nombre: '',
-    apellidos: '',
-    email: '',
-    password: '',
+    correo_electronico: '',
+    contrasena: '',
     confirmPassword: '',
-    especialidad: '',
-    telefono: '',
-    departamento: '',
-    experiencia: '',
-    titulo: '',
-    estado: 'activo'
+    especialidad: ''
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -23,7 +17,7 @@ function CreateTeacher() {
   const [loading, setLoading] = useState(false);
 
   const especialidades = [
-    'Matemáticas', 'Física', 'Química', 'Biología', 'Historia', 'Geografía',
+    'General', 'Matemáticas', 'Física', 'Química', 'Biología', 'Historia', 'Geografía',
     'Literatura', 'Inglés', 'Informática', 'Programación', 'Base de Datos',
     'Redes', 'Inteligencia Artificial', 'Machine Learning', 'Desarrollo Web',
     'Desarrollo Móvil', 'Ciberseguridad', 'Cloud Computing', 'DevOps',
@@ -34,44 +28,28 @@ function CreateTeacher() {
     'Psicología', 'Filosofía', 'Sociología', 'Antropología', 'Otro'
   ];
 
-  const departamentos = [
-    'Ciencias Exactas', 'Ciencias Naturales', 'Ciencias Sociales',
-    'Humanidades', 'Ingeniería', 'Tecnología', 'Administración',
-    'Medicina', 'Arquitectura', 'Arte y Diseño', 'Deportes',
-    'Psicología', 'Educación', 'Investigación', 'Otro'
-  ];
-
-  const titulos = [
-    'Licenciatura', 'Ingeniería', 'Maestría', 'Doctorado',
-    'Especialización', 'Técnico', 'Tecnólogo', 'Otro'
-  ];
-
   const validateForm = () => {
-    if (!form.nombre.trim() || !form.apellidos.trim()) {
-      setError('El nombre y apellidos son obligatorios');
+    if (!form.nombre.trim()) {
+      setError('El nombre es obligatorio');
       return false;
     }
-    if (!form.email.trim()) {
+    if (!form.correo_electronico.trim()) {
       setError('El email es obligatorio');
       return false;
     }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.correo_electronico)) {
       setError('El email no es válido');
       return false;
     }
-    if (!form.password) {
+    if (!form.contrasena) {
       setError('La contraseña es obligatoria');
       return false;
     }
-    if (form.password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+    if (form.contrasena.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
       return false;
     }
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(form.password)) {
-      setError('La contraseña debe contener al menos una mayúscula, una minúscula y un número');
-      return false;
-    }
-    if (form.password !== form.confirmPassword) {
+    if (form.contrasena !== form.confirmPassword) {
       setError('Las contraseñas no coinciden');
       return false;
     }
@@ -92,15 +70,10 @@ function CreateTeacher() {
 
     const endpoint = 'http://localhost:5000/api/profesores';
     const payload = {
-      nombre: `${form.nombre} ${form.apellidos}`.trim(),
-      correo_electronico: form.email.trim(),
-      contrasena: form.password,
-      especialidad: form.especialidad,
-      telefono: form.telefono || null,
-      departamento: form.departamento || null,
-      experiencia: form.experiencia || null,
-      titulo: form.titulo || null,
-      estado: form.estado
+      nombre: form.nombre.trim(),
+      correo_electronico: form.correo_electronico.trim(),
+      contrasena: form.contrasena,
+      especialidad: form.especialidad
     };
 
     try {
@@ -118,8 +91,7 @@ function CreateTeacher() {
       
       setSuccess('✅ Docente creado correctamente');
       setForm({
-        nombre: '', apellidos: '', email: '', password: '', confirmPassword: '',
-        especialidad: '', telefono: '', departamento: '', experiencia: '', titulo: '', estado: 'activo'
+        nombre: '', correo_electronico: '', contrasena: '', confirmPassword: '', especialidad: ''
       });
       setTimeout(() => { setShow(false); setSuccess(''); }, 2000);
     } catch (err) {
@@ -131,8 +103,7 @@ function CreateTeacher() {
 
   const resetForm = () => {
     setForm({
-      nombre: '', apellidos: '', email: '', password: '', confirmPassword: '',
-      especialidad: '', telefono: '', departamento: '', experiencia: '', titulo: '', estado: 'activo'
+      nombre: '', correo_electronico: '', contrasena: '', confirmPassword: '', especialidad: ''
     });
     setError('');
     setSuccess('');
@@ -167,8 +138,8 @@ function CreateTeacher() {
           background: 'linear-gradient(135deg, #23272f, #2b2f38)', 
           borderRadius: 16, 
           padding: 32, 
-          minWidth: 500,
-          maxWidth: 600,
+          minWidth: 450,
+          maxWidth: 500,
           border: '2px solid #353b48',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
         }}>
@@ -211,64 +182,35 @@ function CreateTeacher() {
                 📋 Información Personal
               </h3>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    color: '#bfc9d1', 
-                    fontSize: '14px', 
-                    fontWeight: 600, 
-                    marginBottom: 6 
-                  }}>
-                    Nombre *
-                  </label>
-                  <input 
-                    type="text" 
-                    value={form.nombre} 
-                    onChange={e => setForm({ ...form, nombre: e.target.value })} 
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #353b48',
-                      background: '#23272f',
-                      color: '#bfc9d1',
-                      fontSize: '14px'
-                    }}
-                    placeholder="Primer nombre"
-                    autoFocus
-                  />
-                </div>
-                
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    color: '#bfc9d1', 
-                    fontSize: '14px', 
-                    fontWeight: 600, 
-                    marginBottom: 6 
-                  }}>
-                    Apellidos *
-                  </label>
-                  <input 
-                    type="text" 
-                    value={form.apellidos} 
-                    onChange={e => setForm({ ...form, apellidos: e.target.value })} 
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #353b48',
-                      background: '#23272f',
-                      color: '#bfc9d1',
-                      fontSize: '14px'
-                    }}
-                    placeholder="Apellidos"
-                  />
-                </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ 
+                  display: 'block', 
+                  color: '#bfc9d1', 
+                  fontSize: '14px', 
+                  fontWeight: 600, 
+                  marginBottom: 6 
+                }}>
+                  Nombre Completo *
+                </label>
+                <input 
+                  type="text" 
+                  value={form.nombre} 
+                  onChange={e => setForm({ ...form, nombre: e.target.value })} 
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #353b48',
+                    background: '#23272f',
+                    color: '#bfc9d1',
+                    fontSize: '14px'
+                  }}
+                  placeholder="Dr. Juan Pérez González"
+                  autoFocus
+                />
               </div>
 
-              <div style={{ marginTop: 12 }}>
+              <div>
                 <label style={{ 
                   display: 'block', 
                   color: '#bfc9d1', 
@@ -280,8 +222,8 @@ function CreateTeacher() {
                 </label>
                 <input 
                   type="email" 
-                  value={form.email} 
-                  onChange={e => setForm({ ...form, email: e.target.value })} 
+                  value={form.correo_electronico} 
+                  onChange={e => setForm({ ...form, correo_electronico: e.target.value })} 
                   style={{
                     width: '100%',
                     padding: '10px 12px',
@@ -291,34 +233,7 @@ function CreateTeacher() {
                     color: '#bfc9d1',
                     fontSize: '14px'
                   }}
-                  placeholder="correo@institucion.edu"
-                />
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <label style={{ 
-                  display: 'block', 
-                  color: '#bfc9d1', 
-                  fontSize: '14px', 
-                  fontWeight: 600, 
-                  marginBottom: 6 
-                }}>
-                  Teléfono
-                </label>
-                <input 
-                  type="tel" 
-                  value={form.telefono} 
-                  onChange={e => setForm({ ...form, telefono: e.target.value })} 
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #353b48',
-                    background: '#23272f',
-                    color: '#bfc9d1',
-                    fontSize: '14px'
-                  }}
-                  placeholder="+57 300 123 4567"
+                  placeholder="juan.perez@universidad.edu"
                 />
               </div>
             </div>
@@ -342,127 +257,34 @@ function CreateTeacher() {
                 🎓 Información Académica
               </h3>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    color: '#bfc9d1', 
-                    fontSize: '14px', 
-                    fontWeight: 600, 
-                    marginBottom: 6 
-                  }}>
-                    Especialidad *
-                  </label>
-                  <select 
-                    value={form.especialidad} 
-                    onChange={e => setForm({ ...form, especialidad: e.target.value })} 
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #353b48',
-                      background: '#23272f',
-                      color: '#bfc9d1',
-                      fontSize: '14px'
-                    }}
-                  >
-                    <option value="">Seleccionar especialidad</option>
-                    {especialidades.map(esp => (
-                      <option key={esp} value={esp}>{esp}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    color: '#bfc9d1', 
-                    fontSize: '14px', 
-                    fontWeight: 600, 
-                    marginBottom: 6 
-                  }}>
-                    Departamento
-                  </label>
-                  <select 
-                    value={form.departamento} 
-                    onChange={e => setForm({ ...form, departamento: e.target.value })} 
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #353b48',
-                      background: '#23272f',
-                      color: '#bfc9d1',
-                      fontSize: '14px'
-                    }}
-                  >
-                    <option value="">Seleccionar departamento</option>
-                    {departamentos.map(dep => (
-                      <option key={dep} value={dep}>{dep}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    color: '#bfc9d1', 
-                    fontSize: '14px', 
-                    fontWeight: 600, 
-                    marginBottom: 6 
-                  }}>
-                    Título
-                  </label>
-                  <select 
-                    value={form.titulo} 
-                    onChange={e => setForm({ ...form, titulo: e.target.value })} 
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #353b48',
-                      background: '#23272f',
-                      color: '#bfc9d1',
-                      fontSize: '14px'
-                    }}
-                  >
-                    <option value="">Seleccionar título</option>
-                    {titulos.map(tit => (
-                      <option key={tit} value={tit}>{tit}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    color: '#bfc9d1', 
-                    fontSize: '14px', 
-                    fontWeight: 600, 
-                    marginBottom: 6 
-                  }}>
-                    Años de Experiencia
-                  </label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="50"
-                    value={form.experiencia} 
-                    onChange={e => setForm({ ...form, experiencia: e.target.value })} 
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #353b48',
-                      background: '#23272f',
-                      color: '#bfc9d1',
-                      fontSize: '14px'
-                    }}
-                    placeholder="0"
-                  />
-                </div>
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  color: '#bfc9d1', 
+                  fontSize: '14px', 
+                  fontWeight: 600, 
+                  marginBottom: 6 
+                }}>
+                  Especialidad *
+                </label>
+                <select 
+                  value={form.especialidad} 
+                  onChange={e => setForm({ ...form, especialidad: e.target.value })} 
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #353b48',
+                    background: '#23272f',
+                    color: '#bfc9d1',
+                    fontSize: '14px'
+                  }}
+                >
+                  <option value="">Seleccionar especialidad</option>
+                  {especialidades.map(esp => (
+                    <option key={esp} value={esp}>{esp}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -498,8 +320,8 @@ function CreateTeacher() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input 
                     type={showPassword ? 'text' : 'password'} 
-                    value={form.password} 
-                    onChange={e => setForm({ ...form, password: e.target.value })} 
+                    value={form.contrasena} 
+                    onChange={e => setForm({ ...form, contrasena: e.target.value })} 
                     style={{
                       flex: 1,
                       padding: '10px 12px',
@@ -509,7 +331,7 @@ function CreateTeacher() {
                       color: '#bfc9d1',
                       fontSize: '14px'
                     }}
-                    placeholder="Mínimo 8 caracteres"
+                    placeholder="Mínimo 6 caracteres"
                   />
                   <button 
                     type="button" 
@@ -532,7 +354,7 @@ function CreateTeacher() {
                   color: '#888', 
                   marginTop: 4 
                 }}>
-                  Debe contener al menos 8 caracteres, una mayúscula, una minúscula y un número
+                  Debe contener al menos 6 caracteres
                 </div>
               </div>
 
@@ -579,47 +401,6 @@ function CreateTeacher() {
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* Estado */}
-            <div style={{ 
-              background: '#1a1d23', 
-              padding: 20, 
-              borderRadius: 12, 
-              border: '1px solid #353b48'
-            }}>
-              <h3 style={{ 
-                color: '#1e90ff', 
-                margin: '0 0 16 0', 
-                fontSize: '16px', 
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                ⚙️ Estado
-              </h3>
-              
-              <label style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 12,
-                cursor: 'pointer'
-              }}>
-                <input 
-                  type="checkbox" 
-                  checked={form.estado === 'activo'} 
-                  onChange={e => setForm({ ...form, estado: e.target.checked ? 'activo' : 'inactivo' })} 
-                  style={{
-                    width: '18px',
-                    height: '18px',
-                    accentColor: '#43d477'
-                  }}
-                />
-                <span style={{ color: '#bfc9d1', fontSize: '14px' }}>
-                  Docente activo (puede acceder al sistema)
-                </span>
-              </label>
             </div>
 
             {/* Mensajes de error y éxito */}

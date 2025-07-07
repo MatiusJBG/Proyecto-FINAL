@@ -3,6 +3,8 @@ import { FiTrendingUp, FiBook, FiAward, FiClock } from 'react-icons/fi';
 import './CourseProgress.css';
 
 export default function CourseProgress({ progress, estadisticas = {} }) {
+  const safeProgress = Math.min(progress, 100);
+
   const getProgressColor = (progress) => {
     if (progress >= 80) return '#10b981';
     if (progress >= 60) return '#f59e0b';
@@ -21,8 +23,8 @@ export default function CourseProgress({ progress, estadisticas = {} }) {
       <div className="progress-header">
         <h3>Progreso del Curso</h3>
         <div className="progress-percentage">
-          <span className="percentage">{Math.round(progress)}%</span>
-          <span className="status">{getProgressText(progress)}</span>
+          <span className="percentage">{Math.round(safeProgress)}%</span>
+          <span className="status">{getProgressText(safeProgress)}</span>
         </div>
       </div>
       
@@ -30,8 +32,8 @@ export default function CourseProgress({ progress, estadisticas = {} }) {
         <div 
           className="progress-bar" 
           style={{ 
-            width: `${progress}%`,
-            backgroundColor: getProgressColor(progress)
+            width: `${safeProgress}%`,
+            backgroundColor: getProgressColor(safeProgress)
           }}
         />
       </div>

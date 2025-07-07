@@ -22,7 +22,7 @@ def get_connection():
             database=database
         )
         if connection.is_connected():
-            print('Conexión exitosa a la base de datos')
+            print('Conexión exitosa a la base de datos papasito')
             return connection
     except Error as e:
         print(f'Error al conectar a MySQL: {e}')

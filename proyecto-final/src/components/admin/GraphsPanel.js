@@ -540,7 +540,7 @@ function GraphsPanel({ data }) {
   return (
     <div className="admin-section">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h3>Visualización de Grafos</h3>
+      <h3>Visualización de Grafos</h3>
         <button 
           onClick={recargarDatos}
           disabled={isRefreshing}
