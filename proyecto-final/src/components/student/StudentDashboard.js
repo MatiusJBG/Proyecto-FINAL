@@ -9,6 +9,7 @@ import CourseEnrollment from './CourseEnrollment';
 import CourseTreeView from './CourseTreeView';
 import ExamAttempt from './ExamAttempt';
 import TeacherCoursesExplorer from './TeacherCoursesExplorer';
+import CurrentCoursePanel from './CurrentCoursePanel';
 import './StudentDashboard.css';
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -98,14 +99,46 @@ export default function StudentDashboard({ onLogout, userData }) {
     setEvaluacionEnCurso(evaluacionId);
   };
 
-  const handleFinishEvaluation = () => {
+  const handleFinishEvaluation = async () => {
     setEvaluacionEnCurso(null);
-    cargarEstadisticas();
+    await generarRecomendacion();
+    await cargarEstadisticas();
+    await cargarRecomendaciones();
+    await cargarCursosMatriculados();
+  };
+
+  const handleProgresoLeccion = async (leccionId, completado, tiempo) => {
+    try {
+      await fetch('/api/progreso-leccion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          estudiante_id: userData.ID_Estudiante,
+          leccion_id: leccionId,
+          completado,
+          tiempo_dedicado: tiempo || 30
+        })
+      });
+      await generarRecomendacion();
+      await cargarEstadisticas();
+      await cargarRecomendaciones();
+      await cargarCursosMatriculados();
+    } catch (e) {
+      // Manejo de error opcional
+    }
   };
 
   const handleEnrollmentComplete = async () => {
     await cargarDatosEstudiante();
     setActiveSection('cursos');
+  };
+
+  const generarRecomendacion = async () => {
+    try {
+      await fetch(`/api/estudiante/${userData.ID_Estudiante}/generar-recomendacion`, { method: 'POST' });
+    } catch (e) {
+      // No es crítico si falla
+    }
   };
 
   if (loading) {
@@ -225,6 +258,10 @@ export default function StudentDashboard({ onLogout, userData }) {
                 )}
               </div>
             </div>
+            <CurrentCoursePanel 
+              course={cursoActual}
+              onProgresoUpdate={handleProgresoLeccion}
+            />
             {evaluacionEnCurso ? (
               <ExamAttempt 
                 evaluacionId={evaluacionEnCurso} 
