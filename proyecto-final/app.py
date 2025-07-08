@@ -2307,5 +2307,135 @@ def get_intentos_evaluacion_estudiante(evaluacion_id, estudiante_id):
     finally:
         conn.close()
 
+@app.route('/api/profesores/<int:profesor_id>', methods=['PUT'])
+def actualizar_profesor(profesor_id):
+    data = request.json
+    campos = []
+    valores = []
+    if 'nombre' in data:
+        campos.append('Nombre = %s')
+        valores.append(data['nombre'])
+    if 'correo_electronico' in data:
+        # Validar que el correo no exista en otro profesor
+        conn = get_connection()
+        if not conn:
+            return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+        cursor = conn.cursor()
+        cursor.execute('SELECT ID_Profesor FROM Profesores WHERE Correo_electronico = %s AND ID_Profesor != %s', (data['correo_electronico'], profesor_id))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({'error': 'El correo electrónico ya está en uso por otro docente'}), 400
+        conn.close()
+        campos.append('Correo_electronico = %s')
+        valores.append(data['correo_electronico'])
+    if 'especialidad' in data:
+        campos.append('Especialidad = %s')
+        valores.append(data['especialidad'])
+    if 'contrasena' in data and data['contrasena']:
+        campos.append('Contrasena = %s')
+        valores.append(data['contrasena'])
+    if not campos:
+        return jsonify({'error': 'No hay campos para actualizar'}), 400
+    valores.append(profesor_id)
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        sql = f"UPDATE Profesores SET {', '.join(campos)} WHERE ID_Profesor = %s"
+        cursor.execute(sql, tuple(valores))
+        conn.commit()
+        return jsonify({'message': 'Docente actualizado correctamente'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/estudiantes/<int:estudiante_id>', methods=['PUT'])
+def actualizar_estudiante(estudiante_id):
+    data = request.json
+    campos = []
+    valores = []
+    if 'nombre' in data:
+        campos.append('Nombre = %s')
+        valores.append(data['nombre'])
+    if 'correo_electronico' in data:
+        # Validar que el correo no exista en otro estudiante
+        conn = get_connection()
+        if not conn:
+            return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+        cursor = conn.cursor()
+        cursor.execute('SELECT ID_Estudiante FROM Estudiantes WHERE Correo_electronico = %s AND ID_Estudiante != %s', (data['correo_electronico'], estudiante_id))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({'error': 'El correo electrónico ya está en uso por otro estudiante'}), 400
+        conn.close()
+        campos.append('Correo_electronico = %s')
+        valores.append(data['correo_electronico'])
+    if 'semestre' in data:
+        campos.append('Semestre = %s')
+        valores.append(data['semestre'])
+    if 'fecha_nacimiento' in data:
+        campos.append('Fecha_nacimiento = %s')
+        valores.append(data['fecha_nacimiento'])
+    if 'contrasena' in data and data['contrasena']:
+        campos.append('Contrasena = %s')
+        valores.append(data['contrasena'])
+    if not campos:
+        return jsonify({'error': 'No hay campos para actualizar'}), 400
+    valores.append(estudiante_id)
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        sql = f"UPDATE Estudiantes SET {', '.join(campos)} WHERE ID_Estudiante = %s"
+        cursor.execute(sql, tuple(valores))
+        conn.commit()
+        return jsonify({'message': 'Estudiante actualizado correctamente'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/cursos', methods=['POST'])
+def crear_curso():
+    data = request.get_json()
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion', '')
+    estado = data.get('estado', 'activo')
+    duracion_estimada = data.get('duracion_estimada')
+    id_profesor = data.get('id_profesor')
+
+    if not nombre or not id_profesor:
+        return jsonify({'error': 'Faltan campos obligatorios: nombre y profesor'}), 400
+
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'No se pudo conectar a la base de datos'}), 500
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO Cursos (Nombre, Descripcion, Estado, Duracion_estimada, ID_Profesor)
+            VALUES (%s, %s, %s, %s, %s)
+        ''', (nombre, descripcion, estado, duracion_estimada, id_profesor))
+        conn.commit()
+        curso_id = cursor.lastrowid
+        return jsonify({
+            'id': curso_id,
+            'nombre': nombre,
+            'descripcion': descripcion,
+            'estado': estado,
+            'duracion_estimada': duracion_estimada,
+            'id_profesor': id_profesor
+        }), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
 if __name__ == '__main__':
     app.run(debug=True)

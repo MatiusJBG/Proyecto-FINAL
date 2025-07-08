@@ -356,137 +356,101 @@ function GraphsPanel({ data }) {
       
       // Usar cursosCompletos en lugar de data.cursos
       const cursos = cursosCompletos.length > 0 ? cursosCompletos : data.cursos;
-      const centerX = 600;
       const startY = 100;
-      const spacingX = 450;
       const spacingY = 180;
+      const minSpacingX = 220;
 
-      cursos.forEach((curso, cursoIdx) => {
-        const cursoId = `curso_${curso.ID_Curso || curso.id}`;
-        const cursoX = centerX + (cursoIdx - (cursos.length - 1) / 2) * spacingX;
-        const cursoY = startY;
-        
-        // Nodo del curso
-        nodes.push({ 
-          id: cursoId, 
-          data: { 
-            label: `📚 ${curso.Nombre || curso.nombre}`,
-            type: 'curso'
-          }, 
-          position: { x: cursoX, y: cursoY }, 
-          style: nodeStyles.curso 
-        });
+      // Función recursiva para calcular posiciones y construir nodos/edges
+      function layoutTree(node, type, parentId, depth, xOffset) {
+        let children = [];
+        let label = '';
+        let id = '';
+        let style = {};
+        let nodeType = type;
+        let subtrees = [];
+        let width = minSpacingX;
+        let y = startY + depth * spacingY;
 
-        if (Array.isArray(curso.modulos)) {
-          curso.modulos.forEach((modulo, moduloIdx) => {
-            const moduloId = `modulo_${curso.ID_Curso || curso.id}_${modulo.ID_Modulo || modulo.id}`;
-            const moduloX = cursoX + (moduloIdx - (curso.modulos.length - 1) / 2) * 200;
-            const moduloY = cursoY + spacingY;
-            
-            // Nodo del módulo
-            nodes.push({ 
-              id: moduloId, 
-              data: { 
-                label: `📖 ${modulo.Nombre || modulo.nombre}`,
-                type: 'modulo'
-              }, 
-              position: { x: moduloX, y: moduloY }, 
-              style: nodeStyles.modulo 
-            });
-            
-            // Conexión curso -> módulo
-            edges.push({ 
-              id: `e_${cursoId}_${moduloId}`, 
-              source: cursoId, 
-              target: moduloId, 
-              label: 'contiene', 
-              markerEnd: { type: MarkerType.ArrowClosed }, 
-              style: { 
-                stroke: '#f7b731', 
-                strokeWidth: 3 
+        if (type === 'curso') {
+          id = `curso_${node.ID_Curso || node.id}`;
+          label = `📚 ${node.Nombre || node.nombre}`;
+          style = nodeStyles.curso;
+          if (Array.isArray(node.modulos)) {
+            children = node.modulos.map(m => ({ node: m, type: 'modulo' }));
+          }
+        } else if (type === 'modulo') {
+          id = `modulo_${parentId}_${node.ID_Modulo || node.id}`;
+          label = `📖 ${node.Nombre || node.nombre}`;
+          style = nodeStyles.modulo;
+          if (Array.isArray(node.lecciones)) {
+            children = node.lecciones.map(l => ({ node: l, type: 'leccion' }));
+          }
+        } else if (type === 'leccion') {
+          id = `leccion_${parentId}_${node.ID_Leccion || node.id}`;
+          label = `📝 ${node.Nombre || node.nombre}`;
+          style = nodeStyles.leccion;
+          if (Array.isArray(node.evaluaciones)) {
+            children = node.evaluaciones.map((e, idx) => ({ node: e, type: 'evaluacion', idx }));
+          }
+        } else if (type === 'evaluacion') {
+          id = `evaluacion_${parentId}_${node.ID_Evaluacion || node.id || node.idx}`;
+          label = `📊 ${node.Nombre || node.nombre || node.titulo || `Evaluación ${(node.idx || 0) + 1}`}`;
+          style = nodeStyles.evaluacion;
+        }
+
+        // Calcular subárboles
+        if (children.length > 0) {
+          let totalWidth = 0;
+          let childPositions = [];
+          children.forEach((child, i) => {
+            const subtree = layoutTree(child.node, child.type, id, depth + 1, xOffset + totalWidth);
+            subtrees.push(subtree);
+            childPositions.push(xOffset + totalWidth + subtree.width / 2);
+            totalWidth += subtree.width + minSpacingX;
+          });
+          width = Math.max(totalWidth - minSpacingX, minSpacingX);
+          // Centrar este nodo sobre sus hijos
+          const centerX = childPositions.length > 0 ? (childPositions[0] + childPositions[childPositions.length - 1]) / 2 : xOffset;
+          nodes.push({ id, data: { label, type: nodeType }, position: { x: centerX, y }, style });
+          // Edges
+          subtrees.forEach(sub => {
+            edges.push({
+              id: `e_${id}_${sub.id}`,
+              source: id,
+              target: sub.id,
+              label: type === 'curso' ? 'contiene' : type === 'modulo' ? 'incluye' : type === 'leccion' ? 'evalúa' : '',
+              markerEnd: { type: MarkerType.ArrowClosed },
+              style: {
+                stroke: type === 'curso' ? '#f7b731' : type === 'modulo' ? '#8854d0' : '#fd9644',
+                strokeWidth: 3
               },
               labelStyle: {
-                fill: '#f7b731',
+                fill: type === 'curso' ? '#f7b731' : type === 'modulo' ? '#8854d0' : '#fd9644',
                 fontWeight: 600,
                 fontSize: '12px'
               }
             });
-
-            if (Array.isArray(modulo.lecciones)) {
-              modulo.lecciones.forEach((leccion, leccionIdx) => {
-                const leccionId = `leccion_${curso.ID_Curso || curso.id}_${modulo.ID_Modulo || modulo.id}_${leccion.ID_Leccion || leccion.id}`;
-                const leccionX = moduloX + (leccionIdx - (modulo.lecciones.length - 1) / 2) * 160;
-                const leccionY = moduloY + spacingY;
-                
-                // Nodo de la lección
-                nodes.push({ 
-                  id: leccionId, 
-                  data: { 
-                    label: `📝 ${leccion.Nombre || leccion.nombre}`,
-                    type: 'leccion'
-                  }, 
-                  position: { x: leccionX, y: leccionY }, 
-                  style: nodeStyles.leccion 
-                });
-                
-                // Conexión módulo -> lección
-                edges.push({ 
-                  id: `e_${moduloId}_${leccionId}`, 
-                  source: moduloId, 
-                  target: leccionId, 
-                  label: 'incluye', 
-                  markerEnd: { type: MarkerType.ArrowClosed }, 
-                  style: { 
-                    stroke: '#8854d0', 
-                    strokeWidth: 3 
-                  },
-                  labelStyle: {
-                    fill: '#8854d0',
-                    fontWeight: 600,
-                    fontSize: '12px'
-                  }
-                });
-
-                // Evaluaciones de la lección
-                if (Array.isArray(leccion.evaluaciones)) {
-                  leccion.evaluaciones.forEach((evaluacion, evalIdx) => {
-                    const evaluacionId = `evaluacion_${curso.ID_Curso || curso.id}_${modulo.ID_Modulo || modulo.id}_${leccion.ID_Leccion || leccion.id}_${evaluacion.ID_Evaluacion || evaluacion.id || evalIdx}`;
-                    const evaluacionX = leccionX + (evalIdx - (leccion.evaluaciones.length - 1) / 2) * 140;
-                    const evaluacionY = leccionY + spacingY;
-                    
-                    nodes.push({ 
-                      id: evaluacionId, 
-                      data: { 
-                        label: `📊 ${evaluacion.Nombre || evaluacion.nombre || evaluacion.titulo || `Evaluación ${evalIdx + 1}`}`,
-                        type: 'evaluacion'
-                      }, 
-                      position: { x: evaluacionX, y: evaluacionY }, 
-                      style: nodeStyles.evaluacion 
-                    });
-                    
-                    edges.push({ 
-                      id: `e_${leccionId}_${evaluacionId}`, 
-                      source: leccionId, 
-                      target: evaluacionId, 
-                      label: 'evalúa', 
-                      markerEnd: { type: MarkerType.ArrowClosed }, 
-                      style: { 
-                        stroke: '#fd9644', 
-                        strokeWidth: 3 
-                      },
-                      labelStyle: {
-                        fill: '#fd9644',
-                        fontWeight: 600,
-                        fontSize: '12px'
-                      }
-                    });
-                  });
-                }
-              });
-            }
           });
+          return { id, width, centerX };
+        } else {
+          // Nodo hoja
+          nodes.push({ id, data: { label, type: nodeType }, position: { x: xOffset, y }, style });
+          return { id, width, centerX: xOffset };
         }
+      }
+
+      // Layout para todos los cursos
+      let totalWidth = 0;
+      let cursoCenters = [];
+      cursos.forEach((curso, idx) => {
+        const subtree = layoutTree(curso, 'curso', '', 0, totalWidth);
+        cursoCenters.push(subtree.centerX);
+        totalWidth += subtree.width + minSpacingX * 2;
       });
+
+      // Ajustar todos los nodos para centrar el grafo
+      const graphCenter = cursoCenters.length > 0 ? (cursoCenters[0] + cursoCenters[cursoCenters.length - 1]) / 2 : 0;
+      nodes.forEach(n => { n.position.x = n.position.x - graphCenter + 600; });
 
       return { nodes, edges };
     }

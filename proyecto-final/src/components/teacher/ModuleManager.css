@@ -703,4 +703,117 @@
 
 .empty-evaluations .btn-create-evaluation {
   margin: 0 auto;
+}
+
+.form-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 6px 32px #10b98111, 0 1.5px 6px #43d47711;
+  padding: 32px 24px 24px 24px;
+  margin: 32px auto 24px auto;
+  max-width: 480px;
+  min-width: 260px;
+  border: 2px solid #e5e7eb;
+}
+
+.form-label {
+  display: block;
+  font-size: 1.13rem;
+  font-weight: 600;
+  color: #10b981;
+  margin-bottom: 8px;
+  margin-top: 18px;
+}
+
+.form-input {
+  width: 100%;
+  font-size: 1.08rem;
+  padding: 12px 14px;
+  border: 2px solid #43d47744;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  background: #f8fafc;
+  color: #23272f;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+  border: 2px solid #10b981;
+  outline: none;
+  box-shadow: 0 2px 8px #10b98122;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 30px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 40px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.loading {
+  color: #6c757d;
+  font-size: 16px;
+}
+
+.error {
+  color: #dc3545;
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  .form-card {
+    padding: 16px 4vw 16px 4vw;
+    max-width: 98vw;
+  }
 } 

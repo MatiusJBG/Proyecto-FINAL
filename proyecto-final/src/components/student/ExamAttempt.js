@@ -13,6 +13,7 @@ export default function ExamAttempt({ evaluacionId, estudianteId, cursoId, onFin
   const [progresoModulo, setProgresoModulo] = useState(null);
   const [progresoCurso, setProgresoCurso] = useState(null);
   const [intentos, setIntentos] = useState({ usados: 0, max: 1 });
+  const [preguntaActual, setPreguntaActual] = useState(0);
 
   useEffect(() => {
     async function fetchPreguntas() {
@@ -47,6 +48,18 @@ export default function ExamAttempt({ evaluacionId, estudianteId, cursoId, onFin
     setRespuestas({ ...respuestas, [idPregunta]: idOpcion });
   };
 
+  const handleNext = () => {
+    if (preguntaActual < preguntas.length - 1) {
+      setPreguntaActual(preguntaActual + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (preguntaActual > 0) {
+      setPreguntaActual(preguntaActual - 1);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -65,14 +78,10 @@ export default function ExamAttempt({ evaluacionId, estudianteId, cursoId, onFin
         body: JSON.stringify(body)
       });
       if (!res.ok) throw new Error('Error al enviar respuestas');
-      
       const resultadoData = await res.json();
       setResultado(resultadoData);
       setEnviado(true);
-      
-      // Cargar progreso actualizado
       await cargarProgreso();
-      
     } catch (e) {
       setError(e.message);
     } finally {
@@ -166,7 +175,60 @@ export default function ExamAttempt({ evaluacionId, estudianteId, cursoId, onFin
       <button onClick={() => window.location.reload()}>Reintentar</button>
     </div>
   );
-  
+
+  // NUEVA INTERFAZ: PREGUNTA A PREGUNTA
+  if (!enviado && preguntas.length > 0) {
+    const p = preguntas[preguntaActual];
+    const idPregunta = p.id || p.ID_Pregunta;
+    const opciones = p.opciones || p.Opciones || [];
+    const seleccionada = respuestas[idPregunta];
+    const progreso = Math.round(((preguntaActual + 1) / preguntas.length) * 100);
+    return (
+      <div className="exam-attempt pregunta-una-a-una">
+        {/* Barra de progreso */}
+        <div className="progress-bar-container">
+          <div className="progress-bar-bg">
+            <div className="progress-bar-fill" style={{width: progreso + '%'}}></div>
+          </div>
+          <div className="progress-bar-label">{progreso}% completado &bull; Pregunta {preguntaActual + 1} de {preguntas.length}</div>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="pregunta-header" style={{marginBottom:24}}>
+            <span className="pregunta-indice">Pregunta {preguntaActual + 1} de {preguntas.length}</span>
+            <h3 style={{margin:'12px 0 0 0', color:'#43d477'}}>{p.texto || p.Texto || p.enunciado || p.Enunciado}</h3>
+          </div>
+          <div className="opciones-lista" style={{display:'flex', flexDirection:'column', gap:16, margin:'24px 0'}}>
+            {opciones.map(opt => {
+              const idOpcion = opt.id || opt.ID_Opcion;
+              return (
+                <label key={idOpcion} className={`opcion-item${seleccionada === idOpcion ? ' seleccionada' : ''}`} style={{padding:12, border:'2px solid #43d477', borderRadius:8, background:seleccionada===idOpcion?'#e6fff3':'#23272f', cursor:'pointer', display:'flex', alignItems:'center', gap:12}}>
+                  <input
+                    type="radio"
+                    name={`pregunta_${idPregunta}`}
+                    value={idOpcion}
+                    checked={seleccionada === idOpcion}
+                    onChange={() => handleChange(idPregunta, idOpcion)}
+                    style={{marginRight:8}}
+                  />
+                  <span>{opt.texto || opt.Texto}</span>
+                </label>
+              );
+            })}
+          </div>
+          <div className="pregunta-navegacion" style={{display:'flex', gap:16, justifyContent:'space-between', marginTop:24}}>
+            <button type="button" className="admin-btn" style={{background:'#888'}} onClick={handlePrev} disabled={preguntaActual===0}>Anterior</button>
+            {preguntaActual < preguntas.length - 1 && (
+              <button type="button" className="admin-btn" style={{background:'#43d477'}} onClick={handleNext} disabled={!seleccionada}>Siguiente pregunta</button>
+            )}
+            {preguntaActual === preguntas.length - 1 && (
+              <button type="submit" className="admin-btn" style={{background:'#43d477'}} disabled={!seleccionada}>Enviar respuestas</button>
+            )}
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   if (enviado && resultado) {
     return (
       <div className="exam-attempt resultado">

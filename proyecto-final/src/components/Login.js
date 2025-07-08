@@ -39,7 +39,7 @@ function Login({ onLogin, onlyTeacher }) {
   return (
     <div className="login-container">
       <form className="login-form" onSubmit={handleSubmit}>
-        <h1 className="brand-title">FI-SEXY</h1>
+        <h1 className="brand-title">NewGenEdu</h1>
         <h2 className="login-title">Iniciar Sesión</h2>
         {error && (
           <div className="custom-error">

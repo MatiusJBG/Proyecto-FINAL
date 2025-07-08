@@ -32,31 +32,35 @@ function QuestionForm({ onSave }) {
   };
 
   return (
-    <form className="question-form" onSubmit={handleSubmit}>
-      <label>Enunciado de la pregunta:</label>
-      <input type="text" value={enunciado} onChange={e => setEnunciado(e.target.value)} required />
-      <label>Opciones:</label>
-      {opciones.map((opt, idx) => (
-        <div key={idx} className="option-row">
-          <input
-            type="text"
-            value={opt}
-            onChange={e => handleOptionChange(idx, e.target.value)}
-            required
-            placeholder={`Opción ${idx + 1}`}
-          />
-          <input
-            type="radio"
-            name="correcta"
-            checked={respuestaCorrecta === idx}
-            onChange={() => setRespuestaCorrecta(idx)}
-            title="Marcar como correcta"
-          />
-          <span>Correcta</span>
-        </div>
-      ))}
-      {error && <div className="error">{error}</div>}
-      <button type="submit">Agregar pregunta</button>
+    <form className="question-form modern-card" onSubmit={handleSubmit}>
+      <label className="form-label">Enunciado de la pregunta:<span className="required">*</span></label>
+      <input className={error && !enunciado.trim() ? 'input-error' : ''} type="text" value={enunciado} onChange={e => setEnunciado(e.target.value)} required placeholder="Escribe el enunciado aquí..." autoFocus />
+      <label className="form-label">Opciones:<span className="required">*</span></label>
+      <div className="options-list">
+        {opciones.map((opt, idx) => (
+          <div key={idx} className={`option-row option-card${error && !opt.trim() ? ' input-error' : ''}`}> 
+            <input
+              type="text"
+              value={opt}
+              onChange={e => handleOptionChange(idx, e.target.value)}
+              required
+              placeholder={`Opción ${idx + 1}`}
+            />
+            <label className="radio-label" title="Marcar como correcta">
+              <input
+                type="radio"
+                name="correcta"
+                checked={respuestaCorrecta === idx}
+                onChange={() => setRespuestaCorrecta(idx)}
+              />
+              <span className={respuestaCorrecta === idx ? 'radio-custom checked' : 'radio-custom'}></span>
+              <span className="correct-label">Correcta</span>
+            </label>
+          </div>
+        ))}
+      </div>
+      {error && <div className="error-message">{error}</div>}
+      <button type="submit" className="btn-main">Agregar pregunta</button>
     </form>
   );
 }
